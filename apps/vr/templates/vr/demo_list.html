@@ -1,0 +1,22 @@
+{% extends "generic/_list.html" %}
+
+
+{% block add_table_th %}
+                                    <th>外键 (vr)</th>
+                                    <th>一对一 (vr)</th>
+                                    <th>多对多 (vr)</th>
+{% endblock %}
+
+
+
+{% block add_table_td %}
+                                                <td>{{ object.p }}</td>
+                                                <td>{{ object.one }}</td>
+                                                <td>
+                                                    {% for o in object.middle %}{{ o.t }}</br>{% endfor %}
+                                                </td>
+
+
+
+{% endblock %}
+

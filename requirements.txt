@@ -1,0 +1,5 @@
+
+django==2.2.20
+PyYAML==5.1
+django-bootstrap3==11.1.0
+
