@@ -6,11 +6,8 @@ from a import models as a_models
 # Create your views here.
 
 
-class DemoMixin(views.ModelMixin):
+class DemoList(views.MyListView):
     model = models.Demo
-
-
-class DemoList(DemoMixin, views.MyListView):
     list_fields = [
         'name',
         ('p_id', '跨库外键ID'),

@@ -118,6 +118,7 @@ def add_router_for_all_models(models=None, urlpatterns=None, args=0b11111, **kwa
         models = models or f_locals.get('models') or get_models(f_locals)
     urlpatterns = urlpatterns or f_locals['urlpatterns']  # 未提供则自动从urls.loacls()中取
 
+    logger.debug(f"{f_locals.get('__name__')} 自动路由...")
     for attr in dir(models):
         if attr.startswith('_'):
             continue

@@ -14,7 +14,7 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
 
         apps/generic/  # django-views-templates项目APP
         apps/a/  # 常规功能演示 (数据库: default)
-        apps/mirror/  # a的镜像, 零代码app
+        apps/mirror/  # a的镜像, 零代码演示
         apps/vr/  # 跨库外键/m2m演示 (数据库: vr)
 
 

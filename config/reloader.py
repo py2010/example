@@ -54,7 +54,7 @@ class ReLoader:
         conf_yml = getattr(module, 'CONF_YML', None)
         if conf_yml:
             yml_path = Path(conf_yml)
-            logger.info(f'监视配置文件(settings-YML): {yml_path}')
+            logger.info(f'加入监视配置文件(settings-YML): {yml_path}')
             self.watch_modules[module.__name__][yml_path] = yml_path.stat().st_mtime
 
     def check_module(self, module, timeout, now_time=time.time()):
