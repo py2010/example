@@ -49,5 +49,6 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
 
 
 * 其它的大家自己研究.
-
+所有演示功能对应的处理程序都在 apps/generic/ 目录,
+其它文件夹是从私人项目中复制的, 所以有很多没用的文件, 懒得整理了.
 
