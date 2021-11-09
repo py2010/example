@@ -64,7 +64,6 @@ INSTALLED_APPS = [
 
 
     'a',
-    'z',
     'mirror',
     'vr',
 

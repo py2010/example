@@ -89,13 +89,10 @@ conf_proxys = {
 
 
 def get_proxy(name):
-    if name in conf_proxys:
-        # 重载conf时
-        proxy = conf_proxys[name]
-    else:
-        # 程序启动时, 首次加载
-        proxy = ConfProxy(name)
-        conf_proxys[name] = proxy
+    if name not in conf_proxys:
+        # 程序启动后, 首次加载
+        conf_proxys[name] = ConfProxy(name)
+    proxy = conf_proxys[name]
     return proxy
 
 

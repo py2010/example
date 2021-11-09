@@ -22,7 +22,7 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
 * 环境：
 
         linux (目录c中的脚本为.sh, 如果是windows需手工runserver)
-        python3.6 (字段串基本是使用f'{var}')
+        python3.6 (字符串基本是使用f'{var}')
         django2.2 (django 1.11估计也支持, 没详细测试)
 
 * 部署：
@@ -56,5 +56,6 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
 * 其它的大家自己研究.
 
         所有演示功能对应的主体程序都在 apps/generic/ 目录,
-        项目中有很多文件夹是从以前其它项目中复制的, 所以有很多没用的文件懒得整理了, 多出的文件不影响演示.
+        项目中有很多文件夹是从以前其它项目中复制的, 所以有很多没用的文件懒得整理了,
+        多出的文件不影响演示.
 

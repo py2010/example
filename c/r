@@ -1,4 +1,4 @@
 #!/bin/bash
 
-redis-cli -p 6377 -a 2017
+redis-cli -p 6379 -a 2017
 
