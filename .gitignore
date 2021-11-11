@@ -10,4 +10,5 @@ nohup.out
 static/bak
 static/t
 __pycache__
-
+default.sqlite3
+vr.sqlite3

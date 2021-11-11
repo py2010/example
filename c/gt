@@ -1,0 +1,35 @@
+#!/bin/bash
+
+
+# path=`dirname "$0"` #脚本目录c
+path="$( cd "$( dirname "$0"  )" && pwd  )" #脚本目录c
+
+base=`dirname "$path"` #根路径
+
+cd $base
+
+
+case $1 in
+        reset|log|push|pull|status) git $*;exit ;;
+        # *) echo 'else';;
+esac
+
+# args="reset log push"
+# if [[ " $args " =~ " $1 " ]];then
+#   git $*
+#   exit
+# fi
+
+
+arg1=$1
+
+
+if [ -z "$arg1" ]; then
+arg1='自动提交'
+
+fi
+
+/usr/bin/git add .
+/usr/bin/git commit -m $arg1
+#git push
+echo `date`
