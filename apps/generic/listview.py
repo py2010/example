@@ -8,6 +8,7 @@ from django.views import generic
 
 from django.db.models.fields import reverse_related
 from django.db.models.fields import related
+from django.urls import reverse_lazy
 
 from . import conf
 
@@ -53,6 +54,41 @@ class ListView(generic.ListView):
     '''
     # template_name = 'generic/_list.html'
     list_fields = []  # 列表页显示的字段
+
+    def get_context_data(self, *args, **kwargs):
+        # 根据用户权限，对应显示增删改查的链接/按钮
+        action_perm = {
+            # action: 对应的action权限码
+            'create': 'add',
+            'delete': 'delete',
+            'update': 'change',
+            'detail': 'view',
+            # 'list': 'view',
+        }
+        app_label = self.model_meta.app_label
+        model_name = self.model_meta.model_name
+
+        model_perms = {
+            # action: 操作权限
+            action: self.request.user.has_perm(f'{app_label}.{perm}_{model_name}')
+            for action, perm in action_perm.items()
+        }
+
+        # list_view_name = self.request.resolver_match.view_name  # app_name可能和meta.app_label不同
+        # view_name = list_view_name[:-5]
+
+        # for action, perm in model_perms.items():
+        #     if perm:
+        #         # 有权限，获取视图url
+        #         try:
+        #             model_perms[action] = reverse_lazy(f'{view_name}_{action}')
+        #         except Exception:
+        #             '未配置action路径，忽略'
+
+        # import ipdb; ipdb.set_trace()  # breakpoint f7da10f4 //
+
+        context_data = super().get_context_data(model_perms=model_perms, *args, **kwargs)
+        return context_data
 
     def get_queryset(self):
         model = self.model or self.queryset.model
@@ -117,8 +153,6 @@ class QueryListView(ListView):
     filter_orm = conf.LISTVIEW_FILTER_ORM  # 是否开启ORM过滤功能
 
     def get_queryset(self):
-        self.js_table()
-
         qs = super().get_queryset()
         if self.filter_orm:
             qs = self.get_queryset_orm(qs, True)
@@ -193,20 +227,41 @@ class PageListView(QueryListView):
     page_kwarg = conf.LISTVIEW_PAGE_KWARG  # url页码参数名称
     page_size_kwarg = conf.LISTVIEW_PAGE_SIZE_KWARG  # url参数PageSize名称, 类似page_kwarg
     page_size_list = conf.LISTVIEW_PAGE_SIZE_LIST  # 前端PageSize选择列表
+    js_table_data = None  # 开启DataTable.js前端表格分页
 
-    def js_table(self):
-        # 前端DataTable表格, 当后端分页/搜索未开启时, 使用前端js分页/搜索过滤
-        self.js_table_data = not (self.paginate_by or self.filter_fields)
+    def get_context_data(self, *args, **kwargs):
 
-    def get(self, request, *a, **k):
-        pagesize = self.request.GET.get(self.page_size_kwarg)
+        pagesize = self.request.GET.get(self.page_size_kwarg)  # 每页显示条数
         try:
             self.paginate_by = min(100, int(pagesize))  # 限制最大100条
         except Exception:
             pass
-        res = super().get(request, *a, **k)
-        res.context_data['url_args'] = [f'{arg}={val}' for arg, val in request.GET.items() if arg != self.page_kwarg]
-        return res
+
+        context_data = super().get_context_data(*args, **kwargs)
+        if context_data.get('is_paginated'):
+            # 生成url参数，用于各分页链接，不包含page=xx参数本身
+            context_data['url_args'] = [
+                f'{arg}={val}' for arg, val in self.request.GET.items() if arg != self.page_kwarg
+            ]
+            context_data['page_range'] = self.get_page_range(context_data['page_obj'])
+
+        elif self.js_table_data is None:
+            # 前端js分页，用户未指定True/False，且后端分页/搜索都未开启时, 开启前端js分页/搜索过滤
+            self.js_table_data = not self.filter_fields
+        return context_data
+
+    def get_page_range(self, page_obj):
+        # 大表分页时，优化页码显示
+        page_range = page_obj.paginator.page_range
+        num_pages = page_obj.paginator.num_pages
+        if num_pages > 10:
+            # 页数太多时不全显示，只显示当前页附近页码
+            PAGES = 3  # 附近页数
+            page_range_1 = max(1, page_obj.number - PAGES)  # 显示的起始页码
+            page_range_2 = min(num_pages + 1, page_obj.number + 1 + PAGES)  # 显示的结束页码
+            page_range = range(page_range_1, page_range_2)
+        # print(page_range, 333333333333)
+        return page_range
 
 
 class SqlListView(PageListView):
@@ -278,7 +333,7 @@ class SqlListView(PageListView):
             queryset = queryset.select_related(*sr_fields)
         if pr_fields:
             queryset = queryset.prefetch_related(*pr_fields)
-        # self.add_only_fields(queryset, onlys)
+        self.add_only_fields(queryset, onlys)
         return queryset
 
     def add_only_fields(self, queryset, field_names=[]):
@@ -346,7 +401,7 @@ class VirtualRelation:
         if o2m:
             field2 = rel_field
         else:
-            field1 = rel_field
+            field1 = rel_field or to_field
 
         qs2 = self.optimize_qs2(obj_list1, qs2, field1, field2)
         obj_list2 = [obj2 for obj2 in qs2]  # qs._fetch_all()
@@ -437,7 +492,10 @@ class VirtualRelation:
         '''
         if IsForeignKeyField:
             logger.debug(f'obj1已含有名称为"{attr}"的关联字段, 不直接settattr')
-            obj1._state.fields_cache[attr] = obj2
+            if hasattr(obj1._state, 'fields_cache'):
+                obj1._state.fields_cache[attr] = obj2  # django 2.*
+            else:
+                setattr(obj1, f'_{attr}_cache', obj2)  # django 1.*
         else:
             setattr(obj1, attr, obj2)
 
@@ -471,10 +529,6 @@ class VirtualRelation:
         return attr, IsForeignKeyField
 
 
-class MyListView(VirtualRelation, SqlListView):
-    1
-
-
 # class VirtualRelationListView(VirtualRelation, SqlListView):
 #     '''
 #     比如跨库虚拟关联, self.model 与 rel_model 通过数据库字段rel_field建立虚拟关联
@@ -484,8 +538,8 @@ class MyListView(VirtualRelation, SqlListView):
 #         'attr': {
 #             'rel_model': 'model2',
 #             'rel_field': 'db_field_name',
-#             'to_field': 'pk',
 #             'rel_type': 'ForeignKey',  # ForeignKey, OneToOneField, ManyToManyField
+#             'to_field': 'pk',
 #             'reverse': False,  # True:反向关联, False:正向关联
 #         }
 #     }

@@ -4,7 +4,7 @@ from generic import views
 from . import models
 
 
-class UserMixin(views.ModelMixin):
+class UserMixin:
     model = models.User
 
 
@@ -24,7 +24,7 @@ class UserList(UserMixin, views.MyListView):
     #     return qs
 
 
-class OneMixin(views.ModelMixin):
+class OneMixin:
 
     model = models.One
 
@@ -42,7 +42,7 @@ class OneList(OneMixin, views.MyListView):
         return qs
 
 
-class PMixin(views.ModelMixin):
+class PMixin:
 
     model = models.P
 
@@ -61,12 +61,8 @@ class PList(PMixin, views.MyListView):
         return qs
 
 
-class TMixin(views.ModelMixin):
-
+class TList(views.MyListView):
     model = models.T
-
-
-class TList(TMixin, views.MyListView):
     list_fields = [
         'name',
         'm_set',
@@ -82,9 +78,8 @@ class TList(TMixin, views.MyListView):
     #     # import ipdb; ipdb.set_trace()  # breakpoint 0f2850bb //
     #     return objs
 
-    def get_queryset(self):
+    def vr(self, qs):
         # 演示 - 虚拟m2m关联
-        qs = super().get_queryset()
         qs_m = models.M._default_manager.all()
         qs_m2t = models.M2T._default_manager.all()
         objs = self.virtual_m2m(qs, qs_m2t, qs_m, m_rel_field_1='t_id', m_rel_field_2='m_id')
@@ -102,11 +97,14 @@ class TList(TMixin, views.MyListView):
         return res
 
     def get(self, request, *args, **kwargs):
+        print(self, 777777777777)
         res = super().get(request, *args, **kwargs)
+        object_list = res.context_data['object_list']
+        res.context_data['object_list'] = self.vr(object_list)  # 跨库关联
         return res
 
 
-class MMixin(views.ModelMixin):
+class MMixin:
 
     model = models.M
 
@@ -127,7 +125,7 @@ class MList(MMixin, views.MyListView):
     #     return self.virtual_m2m(qs, qs_m2t, qs_m, m_rel_field_1='t_id', m_rel_field_2='m_id')
 
 
-class M2TMixin(views.ModelMixin):
+class M2TMixin:
 
     model = models.M2T
 
@@ -140,7 +138,7 @@ class M2TList(M2TMixin, views.MyListView):
         'm_id',
         't_id',
     ]
-    filter_fields = ['t__p__name', ]
+    filter_fields = [('t__p__name', '表P的名称'), ]
     # paginate_by = None
 
     # def get_queryset(self):

@@ -103,7 +103,7 @@ class MyRouter:
         view_name = f'{action.capitalize()}View'
         view = type(
             f'{self.model.__name__}{view_name}',
-            (views.ModelMixin, getattr(views, f'My{view_name}')),
+            (getattr(views, f'My{view_name}'), ),
             kwargs
         )
         return view

@@ -99,10 +99,10 @@ class File(object):
     '''
     _default_conf_file_ = ''
 
-    def __new__(cls, conf_file='', default={}, set_attr=False, no_error=True, *args, **kwargs):
+    def __new__(cls, conf_file='', encoding='utf-8', default={}, set_attr=False, no_error=True, *args, **kwargs):
 
         conf_file = cls._check_(conf_file)
-        data = cls._python_(conf_file)
+        data = cls._python_(conf_file, encoding=encoding)
 
         # conf = super(cls.__bases__[0], cls).__new__(data, *args, **kwargs)
         conf = Conf(default, *args, **kwargs)  # 加载默认配置
@@ -125,7 +125,7 @@ class File(object):
         return conf_file
 
     @classmethod
-    def _python_(cls, conf_file):
+    def _python_(cls, conf_file, encoding='utf-8'):
         # 读取文件转python字典
         raise NotImplementedError('请根据配置文件类型, 在子类实现功能')
 
@@ -134,22 +134,23 @@ class JSON(File):
     _default_conf_file_ = 'conf.json'
 
     @classmethod
-    def _python_(cls, conf_file):
+    def _python_(cls, conf_file, encoding='utf-8'):
         # 读取文本转python字典
-        with open(conf_file) as f:
+        with open(conf_file, encoding=encoding) as f:
             return json.loads(f.read())
 
 
 class YML(File):
     '''
     读取yml配置转py对象, 使支持 dict.key.子key 取值
+    YML('docker-compose.yml, encoding='utf-8', default={}, set_attr=False, no_error=True')
     '''
     _default_conf_file_ = 'conf.yml'
 
     @classmethod
-    def _python_(cls, conf_file):
+    def _python_(cls, conf_file, encoding='utf-8'):
         # 读取文本转python字典
-        with open(conf_file) as f:
+        with open(conf_file, encoding=encoding) as f:
             import yaml
             return yaml.safe_load(f.read())
 
@@ -170,15 +171,17 @@ class INI(File):
     _default_conf_file_ = 'conf.ini'
 
     @classmethod
-    def _python_(cls, conf_file):
+    def _python_(cls, conf_file, encoding='utf-8'):
         # 读取文本转python字典
         if sys.version < '3.0':
             import ConfigParser as configparser
+            kwargs = {}  # ConfigParser可能不支持encoding参数
         else:
             import configparser
+            kwargs = {'encoding': encoding}
 
         conf = configparser.ConfigParser()
-        conf.read(conf_file)
+        conf.read(conf_file, **kwargs)
         data = {}
         for section, option in conf._sections.items():
             if option:

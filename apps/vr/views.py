@@ -6,7 +6,7 @@ from a import models as a_models
 # Create your views here.
 
 
-class DemoList(views.ModelMixin, views.MyListView):
+class DemoList(views.MyListView):
     model = models.Demo
     list_fields = [
         'name',
