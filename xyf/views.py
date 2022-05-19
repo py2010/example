@@ -63,7 +63,7 @@ def login(request):
             return HttpResponseRedirect(r_url)
         except Exception as e:
             print(e)
-            raise
+            # raise
             pass
 
     return render(request, 'base/login.html', locals())

@@ -57,7 +57,6 @@ run() {
         pid=`echo -e "$proc" | grep $port | awk '{print $2}'`
         if [ -z "$pid" ];then
 
-            nohup $p/$f proxy_sshd >& logs/sshd.log &
             # echo \
             nohup $python -u /usr/local/bin/gunicorn \
                 --workers=4 \
@@ -97,10 +96,6 @@ arg2=$2
 if ([ "$arg1" -gt 0 ] 2>/dev/null && [ -z "$arg2" ]) ;then
     arg2=$host':'${arg1}
     arg1='runserver --noreload'
-    # $p/$f proxy_sshd >& sshd.log &
-
-elif [ "$arg1" == "ssh" ];then
-    arg1='proxy_sshd'
 
 elif [ "$arg1" == "m1" ];then
     arg1='makemigrations'
@@ -118,15 +113,6 @@ elif [ "$arg1" == "s" ];then
 elif [ -z "$arg1" ];then
     arg1='runserver'
     arg2=$host':'$port
-
-    # echo $arg2 444444444
-
-    # $p/$f proxy_sshd &
-    # trap 'onCtrlC' SIGHUP SIGINT SIGQUIT SIGKILL
-    # function onCtrlC () {
-    #     echo -e '\n退出ssh服务端...'
-    #     pkill -f proxy_sshd
-    # }
 
 elif [ "$arg1" == "stop" ];then
     run $arg1 $2

@@ -115,7 +115,6 @@
 
 
 
-            {% comment help %} 
             {% if request.user.is_staff %}
             <li class="landing_link">
                 <a><i class="fa fa-database"></i> 
@@ -126,13 +125,10 @@
                     <li><a href="/admin/" target="_blank">后台主页</a></li>
 
                     <li><a href="/admin/auth/user/" target="_blank">网站用户</a></li>
-
-                    <li><a href="/admin/cmdb/hostuser/" target="_blank">SSH用户</a></li>
                 </ul>
             </li>
             {% endif %}
 
-            {% endcomment %}
 
             {#% endcache %#}
 

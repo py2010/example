@@ -9,7 +9,7 @@
 {#                    </form>#}
                 </div>
                 <ul class="nav navbar-top-links navbar-right">
-                    欢迎 {{ user  }} 使用demo系统  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+                    欢迎 {{ request.user  }} 使用demo系统  &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
                     {% if request.user.is_authenticated %}
                     <li><a href="/logout"><i class="fa fa-sign-out"></i> 注销</a></li>
                     {% else %}

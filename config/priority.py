@@ -237,6 +237,8 @@ class ConfProxy:
         raise UserWarning(
             '不建议将业务数据保存到配置项中, 因为不同于conf文件模块的静态配置值, 当前取值是动态的,'
             '所以可能会与优先级取值/配置重载等功能冲突, 导致setattr值被刷新或删除.'
+            '若只是conf.py存取值, 不是常量, 为和优先级取配置的功能区分,'
+            f'建议配置项不使用全大写: {self.conf_module.__name__}.{attr}, 且应注意reload影响.'
         )
         # if not self.re_load:
         #     return setattr(self.conf_module, attr, val)

@@ -21,6 +21,8 @@ from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from allapp import URLS_APPS
 from .views import index, login, logout, password_change
 
+admin.site.site_header = '婕旂ず绯荤粺鍚庡彴绠＄悊'
+
 urlpatterns = [
 
     url('admin/', admin.site.urls),
@@ -38,7 +40,7 @@ urlpatterns += staticfiles_urlpatterns()
 
 
 for app, app_urls in URLS_APPS.items():
-    # 开始自动装载各app.urls
+    # 寮�濮嬭嚜鍔ㄨ杞藉悇app.urls
 
     app_urlresolver = getattr(app_urls, 'urlpatterns', [])
 

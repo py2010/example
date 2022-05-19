@@ -1,6 +1,7 @@
 from django.db import models
 
-# from a.models import P, One, T
+from generic import vr
+from a.models import P, One, T
 # Create your models here.
 
 
@@ -28,6 +29,15 @@ class Demo(models.Model):
     # def __str__(self):
     #     return self.name
 
+    class VirtualRelation(vr.VR):
+        one = vr.OneToOneField(
+            One, verbose_name="One",
+            db_column='one_id', related_name='demo',
+            on_delete=models.SET_NULL, null=True, blank=True)
+        p = vr.ForeignKey(
+            P, verbose_name="P",
+            on_delete=models.SET_NULL, null=True, blank=True)
+
 
 class Middle(models.Model):
     '''虚拟关联m2m中间表'''
@@ -41,3 +51,13 @@ class Middle(models.Model):
 
     def __str__(self):
         return f'跨库中间表 - Demo: {self.demo_id} <--> T: {self.t_id}'
+
+    class VirtualRelation(vr.VR):
+        demo = vr.OneToOneField(
+            Demo, verbose_name="Demo",
+            related_name='middle',
+            on_delete=models.SET_NULL, null=True, blank=True)
+        t = vr.ForeignKey(
+            T, verbose_name="T",
+            on_delete=models.SET_NULL, null=True, blank=True)
+

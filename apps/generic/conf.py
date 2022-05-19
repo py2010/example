@@ -26,27 +26,30 @@ else:
 
 # 列表页通用视图, 相关参数宏观配置
 
-LISTVIEW_FILTER_ORM = False  # 开启ORM过滤
+LISTVIEW_FILTER_ORM_FIELDS = []  # 开启ORM过滤的字段，列表或'__all__'.
+# LISTVIEW_FILTER_ORM_FIELDS = '__all__'  # 小心CC
+LISTVIEW_FILTER_ORM_PREFIX = ''  # ORM过滤字段参数增加前缀，以免出现参数混淆，比如字段名为page
 LISTVIEW_OPTIMIZE_SQL = True  # 开启SQL优化
 
 LISTVIEW_PAGE_KWARG = 'page'  # url页码名称, &page=3
 LISTVIEW_PAGINATE_BY = 20  # 每页条数
 LISTVIEW_PAGE_SIZE_KWARG = 'pagesize'  # 每页条数-url变量名称, &pagesize=20
 LISTVIEW_PAGE_SIZE_LIST = [
-    # 2,
     20, 30, 50,
 ]  # 页面PageSize选择列表, 供用户动态改变每页显示条数.
 
 
 '''
 MyRouter自动url, 相关参数宏观配置
+action:value字典key的{action}为标识名, 相当于不可修改的变量名, {value}为配置值
 '''
 
 ROUTER_ACTIONS = {
     # 增删改查, 哪些action类型的url需自动生成, 未配置则为None
+    # {action}: {value}
     # True: 生成
     # False: 不生成
-    # None: 根据args确定
+    # None: 默认
     'create': None,
     'delete': None,
     'update': None,
@@ -57,10 +60,16 @@ ROUTER_ACTIONS = {
 ROUTER_URL_RULES = {
     # 配置各action页面的URL路径规则, 用于自动生成urls
     # .../app_label/model_name/{action_url_rule}
+    # {action}: {action_url_rule}, 比如admin_urls规则:
+    # 'create': r'add/$',
+    # 'update': r'(?P<pk>\d+)/change/$',
+
     'create': r'create/$',
     'delete': r'delete/$',
     'update': r'(?P<pk>\d+)/update/$',
     'detail': r'(?P<pk>\d+)/$',  # model_name根路径+主键ID, 打开Detail页
     'list': r'$',  # 访问model_name根路径, 打开列表页
+
 }
+
 

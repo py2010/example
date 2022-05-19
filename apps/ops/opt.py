@@ -59,7 +59,7 @@ class Aes:
 class EncryptField(models.CharField):
     '''
     加密字段
-    password = EncryptField("密码", max_length=80, write_only=True, default='')
+    password = EncryptField("密文", max_length=80, write_only=True, default='')
     '''
     # DISPLAY_VALUE = '****'
 

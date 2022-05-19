@@ -143,7 +143,7 @@ class JSON(File):
 class YML(File):
     '''
     读取yml配置转py对象, 使支持 dict.key.子key 取值
-    YML('docker-compose.yml, encoding='utf-8', default={}, set_attr=False, no_error=True')
+    YML('docker-compose.yml', encoding='utf-8', default={}, set_attr=False, no_error=True)
     '''
     _default_conf_file_ = 'conf.yml'
 

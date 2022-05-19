@@ -50,7 +50,7 @@ DEBUG = os.environ.get("DJANGO_DEBUG", yml.debug) == '1'
 # Application definition
 
 INSTALLED_APPS = [
-    # 'suit',  # 后台样式，放admin前面，覆盖admin默认样式
+    'suit',  # 后台样式，放admin前面，覆盖admin默认样式 (否则需人工放置模板到项目根目录templates)
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -245,7 +245,7 @@ LOGGING = {
             'formatter': 'myformat'
         },
         'SF': {
-            'level': 'INFO',
+            # 'level': 'INFO',
             'class': 'logging.handlers.RotatingFileHandler',  # 保存到文件，根据文件大小自动切
             'filename': os.path.join(BASE_DIR, log_dir, f"{log_name}_info.log"),  # 日志文件
             'maxBytes': 1024 * 1024 * 50,  # 日志大小 50M

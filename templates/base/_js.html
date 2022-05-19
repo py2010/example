@@ -36,8 +36,9 @@
 
 <!-- Page-Level Scripts -->
 <script>
+   var oTable;
    $(document).ready(function () {
-        $('.dataTables-example').DataTable({
+        oTable = $('.dataTables-example').DataTable({
 
             "oLanguage": {
                 "sLengthMenu": "每页显示 _MENU_ 条记录",
@@ -84,6 +85,10 @@
 
 
     });
+    // oTable.order(
+    //     [ 0, 'desc' ],  // 倒序
+    //     [ 1, 'asc' ],
+    // ).draw();
 
 
     $("#CheckedAll").click(function () {

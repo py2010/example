@@ -4,6 +4,7 @@ from django.db import models
 
 from django.contrib.auth import get_user_model
 
+from generic import vr
 
 User = get_user_model()
 Group = User.groups.rel.model
@@ -60,6 +61,13 @@ class T(models.Model):
         ordering = ['name']
         verbose_name = 'T'
 
+    class VirtualRelation(vr.VR):
+        # (vr.one.column == model.one.column)
+        one = vr.OneToOneField(
+            One, verbose_name="One",
+            related_name='t',
+            on_delete=models.SET_NULL, null=True, blank=True)
+
     # def __str__(self):
     #     return self.name
 
@@ -77,14 +85,18 @@ class T(models.Model):
 
 class M(models.Model):
     name = models.CharField("名称", max_length=30, default='mmm')
-    p = models.ForeignKey(
-        P, verbose_name="P",
-        related_name='m',
-        on_delete=models.SET_NULL, null=True, blank=True)
-    one = models.OneToOneField(
-        One, verbose_name="One",
-        # related_name='m',
-        on_delete=models.SET_NULL, null=True, blank=True)
+    # p = models.ForeignKey(
+    #     P, verbose_name="P",
+    #     related_name='m',
+    #     related_query_name='m2',
+    #     on_delete=models.SET_NULL, null=True, blank=True)
+    # one = models.OneToOneField(
+    #     One, verbose_name="One",
+    #     db_column='one_id',
+    #     # related_name='m',
+    #     on_delete=models.SET_NULL, null=True, blank=True)
+    p_id = models.SmallIntegerField("One++", null=True, blank=True)
+    one_id = models.SmallIntegerField("One++", null=True, blank=True)
 
     t = models.ManyToManyField(
         T, verbose_name='T',
@@ -94,6 +106,20 @@ class M(models.Model):
     class Meta:
         ordering = ['name']
         verbose_name = 'M'
+
+    class VirtualRelation(vr.VR):
+        # 虚拟关系字段 db_column 需有对应model字段column (one.column == one_id)
+        one = vr.OneToOneField(
+            One, verbose_name="One",
+            # db_column='one_id',
+            related_name='m',
+            on_delete=models.SET_NULL, null=True, blank=True)
+        p = vr.ForeignKey(
+            P, verbose_name="P",
+            # db_column='p_id',
+            related_name='m',
+            related_query_name='m2',
+            on_delete=models.SET_NULL, null=True, blank=True)
 
     # def __str__(self):
     #     return self.name
@@ -109,6 +135,10 @@ class M2T(models.Model):
     class Meta:
         verbose_name = 'M2T'
         # unique_together = [('m', 't'), ]
+
+    class VirtualRelation(vr.VR):
+        m = vr.ForeignKey(M, verbose_name='M', on_delete=models.CASCADE)
+        t = vr.ForeignKey(T, verbose_name='T', on_delete=models.CASCADE)
 
     def __str__(self):
         return f'{self.id} - m: {self.m_id} t: {self.t_id} '
