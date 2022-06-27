@@ -8,7 +8,7 @@ from . import related_descriptors
 
 class ForeignKey(_dj.ForeignKey):
 
-    column_field = None  # VirtualRelation配置的外键字段--对应在model中的真实字段, db_column一致.
+    column_field = None  # VirtualRelation配置的外键字段--对应在model中的真实字段, column数据库字段需一致.
     # rel_class = reverse_related.ManyToOneRel
 
     # def get_cache_name(self):

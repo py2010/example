@@ -1,0 +1,24 @@
+{% extends "generic/_list.html" %}
+
+
+{% block filter_orm %}
+                                <!-- 自定义ORM搜索框列表 - 示例 -->
+                                <div class="form-group pull-right">
+                                    <label class="control-label" for="quantity">T:</label>
+                                    <input type="text" class="form-control"
+                                     name="t__name" value="{{ request.GET.t__name__icontains }}" 
+                                     placeholder="T名称"
+                                     onkeydown="if(event.keyCode==13)window.location='?t__name__icontains='+this.value.replace(/^\s+|\s+$/g,'');"
+                                    />
+                                </div>
+                                <div class="form-group pull-right">
+                                    <label class="control-label" for="quantity">t_P:</label>
+                                    <input type="text" class="form-control"
+                                     name="t__p__name" value="{{ request.GET.t__p__name__icontains }}" 
+                                     placeholder="t_P名称"
+                                     onkeydown="if(event.keyCode==13)window.location='?t__p__name__icontains='+this.value.replace(/^\s+|\s+$/g,'');"
+                                    />
+                                </div>
+{% endblock %}
+
+

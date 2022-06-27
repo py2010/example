@@ -83,22 +83,28 @@ class MMixin:
 class MList(MMixin, views.MyListView):
     # paginate_by = None  # 不分页
     filter_fields = [('name', 'M名称'), ('t__name', 'T名称'), ]  # 搜索过滤
-    filter_orm_fields = ['t__name__icontains', 't__b__name__icontains', ]  # orm过滤字段, 为安全必须配置字段
+    filter_orm_fields = ['t__name__icontains', 't__p__name__icontains', ]  # orm过滤字段, 为安全必须配置字段
     # filter_orm_fields = '__all__'  # 开放所有字段ORM
 
     list_fields = [
         'name',
         'one_id',
+        ('t__p__name', 't_P名称'),
         ('t__name', 'T (多对多)'),  # 中间表 a_m_t
         # # 'p__b__~one',
         # # 'm2t_set__t_id',
         # # 'm2t_set__t__name',
-        ('~p__name', '虚拟外键'),
+        ('~p__name', 'P虚拟外键'),
         '~one__b_id',
         '~one__b__p_set',
         ('~m2t_set__~t__name', 'T(虚拟多对多)'),  # 中间表 a_m2t, m2m = o2m + m2o
         ('~m2t_set__~t__p__name', 'P'),
     ]
+
+    # def get_queryset(self):
+    #     qs = super().get_queryset()
+    #     # import ipdb; ipdb.set_trace()
+    #     return qs
 
 
 class M2TMixin:
@@ -115,8 +121,9 @@ class M2TList(M2TMixin, views.MyListView):
         't_id',
         ('~m__name', 'M名'),
         ('~t__name', 'T名'),
+        ('t__p__name', '表P的名称'),
     ]
-    # filter_fields = [('t__p__name', '表P的名称'), ]
+    filter_fields = [('t__p__name', '表P的名称'), ]
     # paginate_by = None
 
     # def get_queryset(self):

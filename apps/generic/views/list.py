@@ -177,7 +177,7 @@ class QueryListView(ListView):
             # print(Q_kwargs, 77777777)
             q = models.Q(**Q_kwargs)
             q.connector = 'OR'  # 写法兼容django 1.x
-            queryset = queryset.filter(q)
+            queryset = queryset.filter(q).distinct()
         return queryset
 
     def get_queryset_orm(self, queryset=None, ignore_error=False):
@@ -207,7 +207,7 @@ class QueryListView(ListView):
             ):
                 # print('ORM_参数', k, v)
                 try:
-                    queryset = queryset.filter(**{k[len(self.filter_orm_prefix):]: v})
+                    queryset = queryset.filter(**{k[len(self.filter_orm_prefix):]: v}).distinct()
                 except Exception:
                     if ignore_error:
                         # 忽略错误的orm表达式参数
@@ -302,7 +302,7 @@ class VirtualRelationListView(PageListView):
         '''
         select_fields, lookup_fields = self.prefetch_fields()
         # print(lookup_fields, 7777777788888888)
-        if object_list._result_cache is None:
+        if getattr(object_list, '_result_cache', []) is None:
             # 增加SQL查询字段, (queryset未提交IO)
             self.add_only_fields(object_list, select_fields)
         vr.prefetch_related_objects([obj for obj in object_list], lookup_fields)  # 分页SQL提交IO, 设置虚拟关联

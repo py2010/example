@@ -178,6 +178,7 @@ class XxxMixin:
 class XxxList(XxxMixin, views.MyListView):
     list_fields = ['pk', 'm2o__o2o__pk', 'x2o__x2m', '反向外键/正反m2m']
     filter_fields = ['field1', 'x2o__field3']
+    filter_orm_fields = '__all__'
 
 
 class XxxDetail(XxxMixin, views.MyDetailView):

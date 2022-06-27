@@ -35,11 +35,3 @@ class GenericConfig(AppConfig):
     #         if hasattr(model, 'VirtualRelation'):
     #             print(model.VirtualRelation, 666666)
 
-    def ready(self):
-        from a.models import T, B
-        e = T.objects.all()
-        # f = e.filter(one__name__icontains='1')
-        f = e.filter(p__b__one__name__icontains='1')
-        f._fetch_all()
-
-

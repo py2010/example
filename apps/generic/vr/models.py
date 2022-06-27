@@ -17,7 +17,6 @@ class Demo(models.Model):
         虚拟关联 -- 虚拟字段,
         vr_field.column = model_field.column (比如db_column参数相同)
         参数 db_column, to_field 含义同django官方字段一致,
-        如果是多对多虚拟关系, 必须提供 through=中间表,
         某些参数比如on_delete在虚拟关联中无意义(目前只用于显示列表页).
         '''
         group = vr.ForeignKey(
