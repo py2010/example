@@ -1,6 +1,7 @@
 # django-views-templates 示例
 
 django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic-views-templates
+
 相关APP模块很适合放入自己项目中用于增强django功能, 本示例也很适合中级py人员向高级进阶/学习.
 
 * 功能:
