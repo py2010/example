@@ -1,5 +1,6 @@
 # coding=utf-8
 
+from django import __version__
 from django.db.models.fields import related_descriptors as _dj
 
 
@@ -13,7 +14,11 @@ class FieldCacheMixin:
         cache_name = self.get_cache_name()
         try:
             return instance._state.fields_cache[cache_name]
+        except AttributeError:
+            raise Exception('出现未知错误')
         except KeyError:
+            if __version__ < '2':
+                return getattr(instance, cache_name)
             raise Exception('目前vr功能只用于列表页, 为了SQL性能暂不支持单条vr查询! 请检查列表页vr功能异常.')
 
     def is_cached(self, instance):
@@ -78,8 +83,15 @@ class ReverseOneToOneDescriptor(VirtualRelationDescriptor, _dj.ReverseOneToOneDe
         # we must manage the reverse relation cache manually.
         for rel_obj in queryset:
             instance = instances_dict[rel_obj_attr(rel_obj)]
-            self.related.field.set_cached_value(rel_obj, instance)
-        return queryset, rel_obj_attr, instance_attr, True, self.related.get_cache_name(), False
+            if __version__ > '2':
+                self.related.field.set_cached_value(rel_obj, instance)
+            else:
+                1  # 反向本来就可以不联接
+
+        if __version__ < '2':
+            return queryset, rel_obj_attr, instance_attr, True, self.related.get_cache_name()
+        else:
+            return queryset, rel_obj_attr, instance_attr, True, self.related.get_cache_name(), False
 
 
 class ReverseManyToOneDescriptor(_dj.ReverseManyToOneDescriptor):
@@ -148,9 +160,13 @@ def rewrite_reverse_many_to_one_manager(related_manager_cls):
         # the reverse relation manually.
         for rel_obj in queryset:
             instance = instances_dict[rel_obj_attr(rel_obj)]
-            setattr(rel_obj._vr, self.field.name, instance._model_instance)  # 反方向也缓存
-        cache_name = self.field.remote_field.get_cache_name()
-        return queryset, rel_obj_attr, instance_attr, False, cache_name, False
+            setattr(rel_obj._vr, self.field.name, instance._model_instance)  # 反方向也可以缓存 (当前列表页功能实际用不上)
+        cache_name = self.field.remote_field.get_cache_name() if __version__ > '2' else self.field.related_query_name()
+
+        if __version__ < '2':
+            return queryset, rel_obj_attr, instance_attr, False, cache_name
+        else:
+            return queryset, rel_obj_attr, instance_attr, False, cache_name, False
 
     old_init = related_manager_cls.__init__
 

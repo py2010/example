@@ -291,7 +291,9 @@ class VirtualRelationListView(PageListView):
         ----> context[context_object_name] = queryset <----
         分页后的queryset本身引用不应再改变, 否则导致要重新context[xxx] = new_queryset
         '''
-        context = super().get_context_data(object_list=object_list, **kwargs)
+        if object_list is not None:
+            kwargs['object_list'] = object_list  # 兼容django 1.*
+        context = super().get_context_data(**kwargs)
         self.prefetch_related(context['object_list'])  # 分页queryset模型实例绑定关联
         return context
 
@@ -301,7 +303,7 @@ class VirtualRelationListView(PageListView):
         当前函数不能在分页处理前执行, 以免分页过滤失效, 或者导致所有页数据都将进行关联绑定, 浪费处理.
         '''
         select_fields, lookup_fields = self.prefetch_fields()
-        # print(lookup_fields, 7777777788888888)
+        # print(select_fields, lookup_fields, 7777777788888888)
         if getattr(object_list, '_result_cache', []) is None:
             # 增加SQL查询字段, (queryset未提交IO)
             self.add_only_fields(object_list, select_fields)
@@ -315,13 +317,18 @@ class VirtualRelationListView(PageListView):
         # }
 
         def add_field(field_name, field, super_lookup, is_last):
-            select_fields = super_lookup.setdefault('select_fields', [])
+            select_fields = super_lookup.setdefault('select_fields', ['pk'])
 
-            if isinstance(field, ForeignKey) and field_name == field.attname:
-                # ForeignKey.attname(), 只需将外键ID加入SQL查询字段列表, 无需查关联表
-                select_fields.append(field_name)
+            if isinstance(field, (RelatedField, ForeignObjectRel)):
 
-            elif isinstance(field, (RelatedField, ForeignObjectRel)):
+                if isinstance(field, ForeignKey) and field_name == field.attname:
+                    # ForeignKey.attname(), 只需将外键ID加入SQL查询字段列表, 无需查关联表
+                    select_fields.append(field_name)
+                    return
+
+                if isinstance(field, vr.ForeignKey):
+                    field = field.column_field  # 虚拟关联字段, select_fields对应model真实字段
+
                 lookup_fields = super_lookup.setdefault('lookup_fields', {})
                 field_lookup = lookup_fields.setdefault(field_name, {})
                 if is_last:
@@ -329,9 +336,9 @@ class VirtualRelationListView(PageListView):
                     field_lookup.setdefault('select_fields', []).append('*')
                 if isinstance(field, ForeignKey):
                     # 正向外键, 一对一
-                    if field.column not in select_fields:
+                    if field.name not in select_fields:
                         # 外键字段, 加入上一级 SQL select 列表
-                        select_fields.append(field.column)  # column 支持虚拟关联字段
+                        select_fields.append(field.name)
                 elif isinstance(field, ManyToOneRel):
                     # o2x 反向外键, 一对一
                     field_lookup.setdefault('select_fields', []).append(field.remote_field.column)

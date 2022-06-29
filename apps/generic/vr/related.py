@@ -1,7 +1,6 @@
 # coding=utf-8
 
 from django.db.models.fields import related as _dj
-from .models import VR
 from . import related_descriptors
 # from . import reverse_related
 
@@ -21,6 +20,7 @@ class ForeignKey(_dj.ForeignKey):
         for name, field in self.model._meta._forward_fields_map.items():
             if self.column == field.column:
                 self.column_field = field
+                self.attname = field.attname  # django2.* getattr(vr, vr_field_id) 返回 vr._model_instance.field_id
                 return True
         if not self.column_field:
             # 虚拟外键关联需有真实数据基础, 当前字段db_column配置错误, 或模型中不存在db_column一致的普通字段
@@ -28,6 +28,12 @@ class ForeignKey(_dj.ForeignKey):
                 f'\n\n\nError: 模型{self.model}虚拟关联字段{self.name}配置错误,\n'
                 f'model数据库表不存在字段{self.column}, 或者这个表字段没有对应的model字段'
             )
+
+    def get_attname(self):
+        # django1.* 有时使用self.attname有时使用self.get_attname()
+        if self.column_field:
+            return self.column_field.attname  # getattr(vr, vr_field_id) 返回 vr._model_instance.field_id
+        return '%s_id' % self.name
 
     def contribute_to_class(self, vr, name, **kwargs):
         # field 转 field_descriptor
@@ -56,6 +62,8 @@ class ForeignKey(_dj.ForeignKey):
             model = cls._meta.concrete_model
             vr = getattr(model, 'VirtualRelation', None)
             if not vr:
+                from .models import VR
+
                 class VirtualRelation(VR):
                     1
                 temp = VirtualRelation  # VirtualRelation已转为实例

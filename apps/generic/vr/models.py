@@ -2,7 +2,9 @@
 
 import weakref
 from django.db.models.base import ModelState
+from django.core import exceptions
 # from django.db import models
+from . import related
 
 """
 
@@ -74,7 +76,14 @@ class MetaClass(type):
                 continue
             obj = getattr(cls, name)
             if hasattr(obj, 'contribute_to_class'):
+                cls.check_field(obj)
                 obj.contribute_to_class(cls, name)
+
+    def check_field(cls, field):
+        if isinstance(field, related._dj.ForeignKey):
+            if not isinstance(field, related.ForeignKey):
+                # 复制model中的字段, 比如 models.ForeignKey(), 未改成 vr.ForeignKey()
+                raise exceptions.FieldError(f'字段配置错误, 关联字段{field}不是虚拟字段?')
 
     def get_field(cls, name):
         try:
@@ -115,6 +124,7 @@ class VR(metaclass=MetaClass):
 
     def __init__(self):
         self._state = ModelState()  # 缓存虚拟关联对象, 类似_state.fields_cache (外键, 正反o2o)
+        self._state.fields_cache = {}  # 兼容 django 1.*
         self._prefetched_objects_cache = {}  # 缓存虚拟关联对象, (反向外键, 正反m2m)
 
     # def __init_subclass__(cls, **kwargs):

@@ -119,9 +119,10 @@
                                             {% if obj_update_url %}<a class="btn btn-info btn-xs" href="{{ obj_update_url }}">编辑</a>{% endif %}
 
                                             {% if model_delete_url %}<a class="btn btn-danger btn-xs">删除</a>{% endif %}
-                                            {% block actions %}
-                                            {% endblock %}
 
+                                            {% block add_actions %}
+                                                <!-- 增加自定义操作 -->
+                                            {% endblock %}
                                         </td>
 
                                     </tr>

@@ -36,6 +36,7 @@ def prefetch_one_field(model_instances, field_name, select_fields=[]):
 
     if not select_fields:
         # x2o + o2x, 业务上SQL实际可以跳过中间关联表查询, 目前为简便程序CPU绑定实例, 会查中间表ID
+        # 因qs.only()字段为空时, 会查询所有字段, 改成只查主键.
         select_fields = ['pk']  # xxx(外键)__field(反向外键)__xxx
     elif '*' in select_fields:
         '''
