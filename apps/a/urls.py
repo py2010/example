@@ -26,6 +26,12 @@ urlpatterns = [
     url(r'^p/$', views.PList.as_view(), name="p_list"),
     *MyRouter(models.P),
 
+    url(r'^p2/$', views.P2List.as_view(), name="p2_list"),
+    *MyRouter(models.P2, create=False),
+
+    url(r'^p3/$', views.P3List.as_view(), name="p3_list"),
+    *MyRouter(models.P3, create=False),
+
 
     # T
     url(r'^t/$', views.TList.as_view(), name="t_list"),

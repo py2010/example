@@ -61,6 +61,24 @@ class PList(PMixin, views.MyListView):
         return qs
 
 
+class P2List(views.MyListView):
+    model = models.P2
+    list_fields = [
+        'name2',
+        ('~p__name', 'p'),
+        ('~p__~m__name', 'm'),
+    ]
+
+
+class P3List(views.MyListView):
+    model = models.P3
+    list_fields = [
+        'name3',
+        ('~p__name', 'p'),
+        ('~p__t__name', 't'),
+    ]
+
+
 class TList(views.MyListView):
     model = models.T
     paginate_by = 5  # 每页条数
