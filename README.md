@@ -2,12 +2,12 @@
 
 django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic-views-templates
 
-相关APP模块很适合放入自己项目中用于增强django功能, 本示例也很适合中级py人员向高级进阶/学习.
+相关APP模块(apps/generic)很适合放入自己项目中用于增强django功能, 本示例也很适合中级py人员向高级进阶/学习.
 
 * 功能:
 
         django通用视图/模板演示
-        示例模板使用的 inspinia_admin-v2.7 大家可自行换成自己的模板.
+        示例模板使用的 inspinia_admin-v2.7 可自行换成和自己网站风格一致的模板,(apps/generic/templates/generic/*.html)
         1. 通用视图模板
         2. 列表页分页/查询/SQL优化
         3. 列表页字段链支持虚拟关联 (虚拟外键/o2o/m2m, 无需自定义模板和View), 多表关联SQL拆分成单表查询, 全自动优化!
@@ -25,7 +25,7 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
 
         linux (目录c中的脚本为.sh, 如果是windows需手工runserver)
         python3.6 (字符串基本是使用f'{var}')
-        django2.2 (django 1.11估计也支持, 没详细测试)
+        django2.2 (兼容django 1.11, 经测试django3和4也都使用正常)
 
 * 部署：
 
@@ -49,7 +49,9 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
         使用账号/密码都是"demo"进行登录
         # 后端搜索过滤 - 常规示例
         http://127.0.0.1:808/a/m/?s=t3
-        # 后端搜索过滤 - ORM示例 (因为ORM业务太杂暂时没有前端FORM表单自动化, 请根据自身业务自定义model模板扩展FORM)
+        # 后端搜索过滤 - ORM示例
+        # 因为ORM业务太杂暂时没有前端FORM表单自动化, 请根据自身业务自定义model模板扩展FORM,
+        # 比如模型M列表页: apps/a/templates/a/m_list.html
         http://127.0.0.1:808/a/m/?t__name__icontains=t3
         http://127.0.0.1:808/a/m/?t__p__name__icontains=111
 
@@ -78,7 +80,9 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
 
 * 二次开发(django-views-templates)
 
-        不像我们平时开发的业务代码, 低代码的程序一般比较精练, 和框架代码接近,
+        将 apps/generic/ 整合入自己网站时, 如果网站前端不是inspinia_admin,
+        需将 apps/generic/templates/generic/*.html 几个文件改成自己网站的组织/风格.
+        对于py程序, 不像我们平时开发的业务代码, 低代码的程序一般比较精练, 和框架代码接近,
         建议在对django官方框架比较熟悉后, 才好方便二次开发, 尤其是虚拟关联功能,
         大家如果对django官方框架model/field注册初始化流程比较熟悉, 也很容易理解相应代码.
         大多数功能如model/field借用官方原有功能再稍做调整, 如果熟悉django则很容易改,

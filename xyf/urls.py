@@ -14,7 +14,10 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.conf.urls import url
+try:
+    from django.urls import re_path
+except Exception:
+    from django.conf.urls import url as re_path  # django 1.*
 
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
@@ -25,14 +28,14 @@ admin.site.site_header = '演示系统后台管理'
 
 urlpatterns = [
 
-    url('admin/', admin.site.urls),
-    url(r'^login', login, name="login"),
-    url(r'^password_change', password_change, name="password_change"),
-    # url(r'^otp', otp, name="otp"),
-    url(r'^logout', logout, name="logout"),
+    re_path('admin/', admin.site.urls),
+    re_path(r'^login', login, name="login"),
+    re_path(r'^password_change', password_change, name="password_change"),
+    # re_path(r'^otp', otp, name="otp"),
+    re_path(r'^logout', logout, name="logout"),
 
 
-    url(r'^$', index),
+    re_path(r'^$', index),
 
 ]
 
@@ -44,7 +47,7 @@ for app, app_urls in URLS_APPS.items():
 
     app_urlresolver = getattr(app_urls, 'urlpatterns', [])
 
-    app_urlpattern = url(f'{app}/', (app_urlresolver, app, app))
+    app_urlpattern = re_path(f'{app}/', (app_urlresolver, app, app))
 
     urlpatterns.append(app_urlpattern)
 

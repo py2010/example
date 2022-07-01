@@ -3,7 +3,10 @@
 import sys
 import logging
 from importlib import import_module
-from django.conf.urls import url
+try:
+    from django.urls import re_path
+except Exception:
+    from django.conf.urls import url as re_path  # django 1.*
 
 from . import views
 from . import conf
@@ -82,7 +85,7 @@ class MyRouter:
         # 自动创建url路由
         model_name = self.model._meta.model_name
         url_path = self.get_url_path(action)
-        return url(
+        return re_path(
             rf'^{model_name}/{url_path}',
             self.get_view(action).as_view(),
             name=f"{model_name}_{action}"
@@ -155,14 +158,14 @@ urlpatterns = [
 
     # 如果需使用自定义配置的人工ListView, 除此之外其它自动生成, 则:
     *MyRouter(models.Xxx, list=False),
-    url(r'^xxx/$', views.XxxList.as_view(), name='xxx_list'),
+    re_path(r'^xxx/$', views.XxxList.as_view(), name='xxx_list'),
 
 
     # 如果 增删改 人工生成, 其它自动生成, 则:
-    url(r'^xxx/create/$', views.XxxAdd.as_view(), name='xxx_create'),
-    url(r'^xxx/delete/$', views.XxxDelete.as_view(), name='xxx_delete'),
+    re_path(r'^xxx/create/$', views.XxxAdd.as_view(), name='xxx_create'),
+    re_path(r'^xxx/delete/$', views.XxxDelete.as_view(), name='xxx_delete'),
 
-    url(r'^xxx/(?P<pk>\d+)/update/$', views.XxxUpdate.as_view(), name='xxx_update'),
+    re_path(r'^xxx/(?P<pk>\d+)/update/$', views.XxxUpdate.as_view(), name='xxx_update'),
 
     *MyRouter(models.Xxx, 0b11),
 

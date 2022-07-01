@@ -1,5 +1,8 @@
 from copy import deepcopy
-from django.utils.translation import ugettext_lazy as _
+try:
+    from django.utils.translation import ugettext_lazy as _
+except Exception:
+    from django.utils.translation import ngettext_lazy as _
 
 
 class ChildItem(object):
