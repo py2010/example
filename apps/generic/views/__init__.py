@@ -17,6 +17,7 @@ from django.utils.html import format_html
 from .base import MyMixin
 from .edit import MyCreateView, MyUpdateView
 from .list import MyListView
+from ..conf import EMPTY_VALUE_DISPLAY
 logger = logging.getLogger()
 
 __all__ = [
@@ -55,7 +56,7 @@ class MyDetailView(MyMixin, DetailView):
         self.object.fields_list = []
         for field in self.object._meta.fields:
             val = obj_get_val(self.object, field)
-            self.object.fields_list.append((field.verbose_name or field.attname, val))
+            self.object.fields_list.append((field.verbose_name or field.attname, val or EMPTY_VALUE_DISPLAY))
         return context
 
 
@@ -79,18 +80,19 @@ def lookup_val(obj, field_info):
                 obj = get_attr(obj, '_vr')
             obj = get_attr(obj, field_name)
             if not obj:
-                return
+                return EMPTY_VALUE_DISPLAY
 
         if field_names[-1].startswith('~'):
             field_name = field_names[-1][1:]  # 最后一个字段为虚拟关联字段
-            return get_attr(obj, '_vr', field_name)
-        # return obj_get_val(obj, fields[-1], last_field_name)
-        if isinstance(obj, Manager):
-            obj = obj.all()
-        if hasattr(obj, '__iter__'):
-            return display_qs([obj_get_val(i, fields[-1], last_field_name) for i in set(obj) if i])
+            val = get_attr(obj, '_vr', field_name)
         else:
-            return obj_get_val(obj, fields[-1], last_field_name)
+            if isinstance(obj, Manager):
+                obj = obj.all()
+            if hasattr(obj, '__iter__'):
+                val = display_qs([obj_get_val(i, fields[-1], last_field_name) for i in set(obj) if i])
+            else:
+                val = obj_get_val(obj, fields[-1], last_field_name)
+        return val or EMPTY_VALUE_DISPLAY
 
     except Exception:
         traceback.print_exc()
@@ -154,7 +156,7 @@ def obj_get_val(obj, field, source_field_name=None):
             # 普通字段, 或外键字段/正反一对一字段
             value = getattr(obj, field.name)
 
-        display_value = utils.display_for_field(value, field, value or '')
+        display_value = utils.display_for_field(value, field, value)
 
         return display_value
 

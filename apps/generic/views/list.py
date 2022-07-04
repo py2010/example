@@ -303,7 +303,7 @@ class VirtualRelationListView(PageListView):
         当前函数不能在分页处理前执行, 以免分页过滤失效, 或者导致所有页数据都将进行关联绑定, 浪费处理.
         '''
         select_fields, lookup_fields = self.prefetch_fields()
-        # print(select_fields, lookup_fields, 7777777788888888)
+        print(select_fields, lookup_fields, 7777777788888888)
         if getattr(object_list, '_result_cache', []) is None:
             # 增加SQL查询字段, (queryset未提交IO)
             self.add_only_fields(object_list, select_fields)
@@ -326,9 +326,6 @@ class VirtualRelationListView(PageListView):
                     select_fields.append(field_name)
                     return
 
-                if isinstance(field, vr.ForeignKey):
-                    field = field.column_field  # 虚拟关联字段, select_fields对应model真实字段
-
                 lookup_fields = super_lookup.setdefault('lookup_fields', {})
                 field_lookup = lookup_fields.setdefault(field_name, {})
                 if is_last:
@@ -336,6 +333,9 @@ class VirtualRelationListView(PageListView):
                     field_lookup.setdefault('select_fields', []).append('*')
                 if isinstance(field, ForeignKey):
                     # 正向外键, 一对一
+                    if isinstance(field, vr.ForeignKey):
+                        field = field.column_field  # 虚拟关联字段, select_fields对应model真实字段
+
                     if field.name not in select_fields:
                         # 外键字段, 加入上一级 SQL select 列表
                         select_fields.append(field.name)
