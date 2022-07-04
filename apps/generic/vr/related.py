@@ -17,7 +17,7 @@ class ForeignKey(_dj.ForeignKey):
 
     def _check_column_field(self):
         # 检查表字段 db_column 是否存在, 或对应的model虚拟外键字段是否存在
-        for name, field in self.model._meta._forward_fields_map.items():
+        for field in self.model._meta.local_fields:
             if self.column == field.column:
                 self.column_field = field
                 self.attname = field.attname  # django2.* getattr(vr, vr_field_id) 返回 vr._model_instance.field_id

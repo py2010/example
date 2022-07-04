@@ -30,7 +30,7 @@ urlpatterns = [
     *MyRouter(models.P),
 
     re_path(r'^p2/$', views.P2List.as_view(), name="p2_list"),
-    *MyRouter(models.P2, create=False),
+    *MyRouter(models.P2),
 
     re_path(r'^p3/$', views.P3List.as_view(), name="p3_list"),
     *MyRouter(models.P3, create=False),

@@ -29,7 +29,6 @@ else:
 LISTVIEW_FILTER_ORM_FIELDS = []  # 开启ORM过滤的字段，列表或'__all__'.
 # LISTVIEW_FILTER_ORM_FIELDS = '__all__'  # 小心CC
 LISTVIEW_FILTER_ORM_PREFIX = ''  # ORM过滤字段参数增加前缀，以免出现参数混淆，比如字段名为page
-LISTVIEW_OPTIMIZE_SQL = True  # 开启SQL优化
 
 LISTVIEW_PAGE_KWARG = 'page'  # url页码名称, &page=3
 LISTVIEW_PAGINATE_BY = 20  # 每页条数

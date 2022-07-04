@@ -52,7 +52,7 @@ class P2(P):
 
 class P3(models.Model):
     # P扩展表3, 常规方式 (普通字段可以跨库)
-    id = models.SmallIntegerField("P", primary_key=True)
+    id = models.SmallIntegerField("PID(主键)", primary_key=True)
     # id = models.OneToOneField(P, primary_key=True, db_column='id', related_name='ext3', on_delete=models.CASCADE)
     name3 = models.CharField("名称3", max_length=30, default='ppp3')
 
