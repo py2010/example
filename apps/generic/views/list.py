@@ -23,13 +23,11 @@ class ListView(TemplateMixin, _ListView):
             'pk',
             字段2,
             (外键字段4__字段2, 外键表字段2标识名),
-            (外键字段4__外键字段3__字段3, 多层关联表字段3标识名称),  # x2o支持多层__关联
-            (<多对多|反向外键>字段5, 字段5标识名), # 碰到x2m (o2m/m2m), 不再支持后续__xxx
+            (外键字段4__外键字段3__字段3, 多层关联表字段3标识名称),
+            (<多对多|反向外键>字段5__外键字段2, 字段2标识名),
         ]
     标识名可以省略, 将自动从Model取 field.verbose_name,
-    关联表类型为x2o(正向外键/正反o2o), 关联对应一条obj数据, 支持多层__关联, 层数不限.
-    关联表类型为x2m(反向外键/正反m2m), 关联对应多条obj数据, 不支持进一步__指向xx字段, 以免判断处理复杂.
-    设置错误的字段将忽略.
+    支持多层__关联, 层数不限, 设置错误的字段项将忽略.
     '''
     # template_name = 'generic/_list.html'
     list_fields = []  # 列表页显示的字段
@@ -120,19 +118,6 @@ class ListView(TemplateMixin, _ListView):
             fields.append(field)
             if index + 1 < len(field_names):
                 model = field.related_model
-                # if isinstance(field, (related.ForeignKey, reverse_related.OneToOneRel)):
-                #     # 其它对应一条数据的关联表字段 (外键/正反o2o), 循环取字段
-                #     model = field.related_model
-                # elif isinstance(field, (
-                #     reverse_related.ManyToOneRel,
-                #     reverse_related.ManyToManyRel,
-                #     related.ManyToManyField
-                # )):  # 反向外键/正反m2m 对应多条数据, 循环应当结束, 否则认为错误的字段配置
-                #     logger.warning(f'反向外键/正反m2m 对应多条数据, 因SQL优化处理复杂, 不支持进行后续__{field_names[index + 1]}关联')
-                #     return
-                # else:
-                #     logger.error(f'"{field_path}"含有未知类型字段"{field_name}": {type(field)}')
-                #     return
 
         if not verbose_name:
             if hasattr(field, 'verbose_name'):
@@ -162,7 +147,7 @@ class QueryListView(ListView):
         '''
         模糊查询多字段, 各字段逻辑或
         外键使用<field>__关联表<field>,
-        django不支持 <field>_id 模糊查询, 使用 <field>__id 代替
+        django不支持 <field>_id 模糊查询, 请使用 <field>__id 代替
         有自定义 field.get_prep_value()，lookup只能用exact，不支持icontains
         '''
         field_infos = self.init_fields(self.filter_fields)
@@ -224,7 +209,7 @@ class PageListView(QueryListView):
         pagesize: 每页条数 (最大限制100条)
     '''
 
-    paginate_by = conf.LISTVIEW_PAGINATE_BY  # 每页条数
+    paginate_by = conf.LISTVIEW_PAGE_SIZE  # 每页条数
     # paginate_orphans = 3  # 尾页少于数量则合并到前一页
 
     page_kwarg = conf.LISTVIEW_PAGE_KWARG  # url页码参数名称
@@ -263,7 +248,6 @@ class PageListView(QueryListView):
             page_range_1 = max(1, page_obj.number - PAGES)  # 显示的起始页码
             page_range_2 = min(num_pages + 1, page_obj.number + 1 + PAGES)  # 显示的结束页码
             page_range = range(page_range_1, page_range_2)
-        # print(page_range, 333333333333)
         return page_range
 
 
@@ -278,12 +262,14 @@ class VirtualRelationListView(PageListView):
 
     需在正向model中配置VirtualRelation虚拟关联关系后, 才可自动进行虚拟关联.
     两个Model如果有实际的关联关系, 也可同样配置model.VirtualRelation, 当成虚拟关联来处理,
-    ListView.list_fields配置时, 为便于区分, 虚拟关联字段以"~"开头.
+    ListView.list_fields配置时, 为便于区分和防止重名, 虚拟关联字段以"~"开头.
+    支持__多层关联, 层数不限, SQL单表查询每个model表, 且正常情况下只会查所需字段数据.
+    末尾建议以普通字段结尾, 否则以关联字段结尾时, 最后字段模型SQL会查表所有字段 select * from
     '''
 
     def get_context_data(self, *, object_list=None, **kwargs):
         '''
-        object_list通常为queryset, 默认来自self.object_list,
+        object_list类型通常为queryset, 默认来自self.object_list,
         列表页有分页时后续会进一步分页过滤, 然后再进行虚拟关联绑定关联表模型实例,
         关联绑定之后不可再进行qs.filter()过滤等操作, 以免生成新的queryset,
         导致模型实例重新生成, 绑定关系丢失, 且会导致页码数据变化, 业务上也无意义,
@@ -292,7 +278,7 @@ class VirtualRelationListView(PageListView):
         分页后的queryset本身引用不应再改变, 否则导致要重新context[xxx] = new_queryset
         '''
         if object_list is not None:
-            kwargs['object_list'] = object_list  # 兼容django 1.*
+            kwargs['object_list'] = object_list  # 兼容django 1.* (object_list放在kwargs)
         context = super().get_context_data(**kwargs)
         self.prefetch_related(context['object_list'])  # 分页queryset模型实例绑定关联
         return context
@@ -303,7 +289,7 @@ class VirtualRelationListView(PageListView):
         当前函数不能在分页处理前执行, 以免分页过滤失效, 或者导致所有页数据都将进行关联绑定, 浪费处理.
         '''
         select_fields, lookup_fields = self.prefetch_fields()
-        print(select_fields, lookup_fields, 7777777788888888)
+        # print(select_fields, lookup_fields, 7777777788888888)
         if getattr(object_list, '_result_cache', []) is None:
             # 增加SQL查询字段, (queryset未提交IO)
             self.add_only_fields(object_list, select_fields)

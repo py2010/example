@@ -32,7 +32,7 @@ LISTVIEW_FILTER_ORM_FIELDS = []  # 开启ORM过滤的字段，列表或'__all__'
 LISTVIEW_FILTER_ORM_PREFIX = ''  # ORM过滤字段参数增加前缀，以免出现参数混淆，比如字段名为page
 
 LISTVIEW_PAGE_KWARG = 'page'  # url页码名称, &page=3
-LISTVIEW_PAGINATE_BY = 20  # 每页条数
+LISTVIEW_PAGE_SIZE = 20  # 每页条数
 LISTVIEW_PAGE_SIZE_KWARG = 'pagesize'  # 每页条数-url变量名称, &pagesize=20
 LISTVIEW_PAGE_SIZE_LIST = [
     20, 30, 50,

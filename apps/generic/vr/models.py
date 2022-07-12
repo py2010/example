@@ -7,6 +7,7 @@ from django.core import exceptions
 from . import related
 
 """
+虚拟关联配置示例
 
 class Demo(models.Model):
     name = models.CharField("名称", max_length=30, default='demo')
@@ -16,10 +17,10 @@ class Demo(models.Model):
 
     class VirtualRelation(vr.VR):
         '''
-        虚拟关联 -- 虚拟字段,
+        虚拟关联 -- 虚拟字段, 需在model表上有对应的真实字段/数据,
         vr_field.column = model_field.column (比如db_column参数相同)
         参数 db_column, to_field 含义同django官方字段一致,
-        某些参数比如on_delete在虚拟关联中无意义(目前只用于显示列表页).
+        某些参数比如on_delete在虚拟关联中无意义.
         '''
         group = vr.ForeignKey(
             Group, verbose_name="组",
@@ -112,7 +113,8 @@ class VR(metaclass=MetaClass):
     """
     model.VirtualRelation
     使model初始化注册时, 支持对虚拟关联初始化准备, 为避免猴子补丁改写官方程序,
-    增加metaclass将类替换为实例 (__init_subclass__ 无法将类替换成其它对象)
+    增加metaclass将类替换为实例 (__init_subclass__ 无法将类替换成其它对象),
+    以便触发 model.vr.contribute_to_class(), 对虚拟字段进行初始化.
     """
     _model = None
     _model_instance = None

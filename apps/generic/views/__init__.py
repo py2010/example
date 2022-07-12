@@ -11,7 +11,7 @@ from django.db.models.fields import reverse_related
 from django.db.models.fields import related
 
 from django.contrib.admin import utils
-from django.core.exceptions import ObjectDoesNotExist
+# from django.core.exceptions import ObjectDoesNotExist
 from django.utils.html import format_html
 
 from .base import MyMixin
@@ -55,119 +55,88 @@ class MyDetailView(MyMixin, DetailView):
         context = super().get_context_data(**kwargs)
         self.object.fields_list = []
         for field in self.object._meta.fields:
-            val = obj_get_val(self.object, field)
-            self.object.fields_list.append((field.verbose_name or field.attname, val or EMPTY_VALUE_DISPLAY))
+            try:
+                val = display_vals(obj_get_val(self.object, field.name, field))
+                self.object.fields_list.append((field.verbose_name or field.attname, val))
+            except Exception:
+                traceback.print_exc()
         return context
 
 
 def lookup_val(obj, field_info):
     '''
     ListView 获取 object.field_name 值, 支持多层关联表路径字段 xx__xxx__xx
-    field_info: field_path, verbose_name, field
+    field_info: field_path, verbose_name, last_field_name, fields
+    正常情况下, 从模型实例取字段数据时不应再有SQL查询, 只有自定义模板展示额外字段时才有可能出现where查询
+    为了性能, 请根据自定义模板额外的字段, 自定义视图增加字段数据.
     '''
     field_path, verbose_name, last_field_name, fields = field_info
     if not fields:
         # ListView.list_fields 为空或无任何有效字段, 返回obj本身
         return obj
 
+    # vals = attrgetter(obj, *get_attr_names(field_path))
+    # return display_vals(vals)
     try:
-        field_names = field_path.split('__')
-        for field_name in field_names[:-1]:
-            # 循环取关联表数据
-            if field_name.startswith('~'):
-                # 虚拟关联字段
-                field_name = field_name[1:]
-                obj = get_attr(obj, '_vr')
-            obj = get_attr(obj, field_name)
-            if not obj:
-                return EMPTY_VALUE_DISPLAY
-
-        if field_names[-1].startswith('~'):
-            field_name = field_names[-1][1:]  # 最后一个字段为虚拟关联字段
-            val = get_attr(obj, '_vr', field_name)
-        else:
-            if isinstance(obj, Manager):
-                obj = obj.all()
-            if hasattr(obj, '__iter__'):
-                val = display_qs([obj_get_val(i, fields[-1], last_field_name) for i in set(obj) if i])
-            else:
-                val = obj_get_val(obj, fields[-1], last_field_name)
-        return val or EMPTY_VALUE_DISPLAY
-
+        names = get_attr_names(field_path)
+        objs = attrgetter(obj, *names[:-1])  # 最后一位字段留着格式化结果数据
+        vals = itemgetter(set(objs), obj_get_val, names[-1], fields[-1])
+        return display_vals(vals)
     except Exception:
         traceback.print_exc()
 
 
-def get_attr(obj, *names):
-    for name in names:
-        if isinstance(obj, Manager):
-            obj = obj.all()
-        if hasattr(obj, '__iter__') and not isinstance(obj, str):
-            obj = [getattr(i, name) for i in set(obj)]
+def get_attr_names(field_path):
+    # __字段分隔成属性列表, 支持~虚拟关联字段
+    return field_path.replace('~', '_vr__').split('__')
+
+
+def attrgetter(objs, *names):
+    # 从模型实例中多层关联字段循环取数据, objs一维列表
+    if isinstance(objs, str) or not hasattr(objs, '__iter__'):
+        objs = [objs]
+    if names:
+        for name in names:
+            objs = itemgetter(objs, get_attr, name)
+    return objs
+
+
+def itemgetter(objs, func, *args, **kwargs):
+    # 为便于处理, func() 需返回列表, 当前函数最终返回一维列表数据
+    vals = []
+    for i in set(objs):
+        val = func(i, *args, **kwargs)
+        vals.extend(val)
+    return vals
+
+
+def get_attr(obj, attr):
+    # 从模型实例中取字段数据, 由于可能是x2m字段, 统一返回列表
+    if obj:
+        sub = getattr(obj, attr, None)
+        if isinstance(sub, Manager):
+            return [i for i in sub.all()]
+        elif sub:
+            return [sub]
+    return []
+
+
+def obj_get_val(obj, field_name, field=None):
+    # 从模型实例取字段数据, 显示到页面之前先格式化
+    vals = attrgetter(obj, field_name)
+    if field:
+        if isinstance(field, (related.RelatedField, reverse_related.ForeignObjectRel)):
+            # 关联字段/虚拟关联字段
+            if isinstance(field, related.ForeignKey) and not vals:
+                vals = [getattr(obj, field.attname)]  # 外键尝试取数据库字段ID值
         else:
-            obj = getattr(obj, name)
-    return obj
+            # 普通字段
+            vals = [utils.display_for_field(val, field, None) for val in vals]
+    return vals
 
 
-def obj_get_val(obj, field, source_field_name=None):
-    '''
-    从obj 获取 obj.field_name 值.
-    source_field_name, 外键/o2o字段不管是field_name还是field_name_id, field对象都一样,
-    所以用于list_fields区分返回obj.关联对象, 还是返回数据库值obj.field_name_id
-    '''
-    # return field.value_from_object(obj)
-    # import ipdb; ipdb.set_trace()  # breakpoint b1d5cabb //
-    try:
-        value = ''
-        # if isinstance(field, fields.mixins.FieldCacheMixin):  # django 1.x不支持
-        if isinstance(field, related.RelatedField):
-            # 正向关系字段
-
-            if isinstance(field, related.ManyToManyField):
-                # 多对多字段
-                qs = getattr(obj, field.name).all()
-                return display_qs(qs)
-            else:
-                # (N对一) 外键/一对一, 注意区分 field.name 与带"_id"的 field.attname
-                # 如果是field.attname, 不使用关联表数据, 而是当前表关联字段值
-                try:
-                    value = getattr(obj, source_field_name or field.name)
-                except ObjectDoesNotExist:
-                    value = getattr(obj, {field.attname})  # 取数据库字段值
-
-        elif isinstance(field, reverse_related.ForeignObjectRel):
-                # 反向关系字段
-
-            related_name = field.get_accessor_name()
-            rel_obj = getattr(obj, related_name, None)
-            if rel_obj is None:
-                return
-            if isinstance(field, reverse_related.OneToOneRel):
-                    # 反向OneToOne字段
-                value = rel_obj
-            elif isinstance(field, (
-                reverse_related.ManyToOneRel,
-                reverse_related.ManyToManyRel,
-            )):
-                # (N对多) 反向外键/反向m2m字段, 对应多条obj数据.
-                # qs = rel_obj.all()
-                return display_qs(rel_obj)
-        if not value:
-            # 普通字段, 或外键字段/正反一对一字段
-            value = getattr(obj, field.name)
-
-        display_value = utils.display_for_field(value, field, value)
-
-        return display_value
-
-    except Exception:
-        traceback.print_exc()
-
-
-def display_qs(qs):
-    if isinstance(qs, Manager):
-        qs = qs.all()
-    return format_html('<br/>'.join([str(obj) for obj in qs]))
+def display_vals(vals):
+    return format_html('<br/>'.join([str(val) for val in vals])) or EMPTY_VALUE_DISPLAY
 
 
 '''
@@ -212,7 +181,7 @@ from xxx_app_label import views
 
 urlpatterns = [
 
-    url(r'^xxx/create/$', views.XxxAdd.as_view(), name='xxx_create'),
+    url(r'^xxx/create/$', views.XxxCreate.as_view(), name='xxx_create'),
     url(r'^xxx/delete/$', views.XxxDelete.as_view(), name='xxx_delete'),
 
     url(r'^xxx/(?P<pk>\d+)/update/$', views.XxxUpdate.as_view(), name='xxx_update'),
