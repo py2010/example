@@ -27,6 +27,8 @@ EMPTY_VALUE_DISPLAY = '-'  # 表格表单数据为空时(None), 显示字符
 
 # 列表页通用视图, 相关参数宏观配置
 
+LISTVIEW_ORDERING_KWARG = 'ordering'  # 列表页字段排序, 参数名: ordering=name,-update_time
+
 LISTVIEW_FILTER_ORM_FIELDS = []  # 开启ORM过滤的字段，列表或'__all__'.
 # LISTVIEW_FILTER_ORM_FIELDS = '__all__'  # 小心CC
 LISTVIEW_FILTER_ORM_PREFIX = ''  # ORM过滤字段参数增加前缀，以免出现参数混淆，比如字段名为page
@@ -38,6 +40,10 @@ LISTVIEW_PAGE_SIZE_LIST = [
     20, 30, 50,
 ]  # 页面PageSize选择列表, 供用户动态改变每页显示条数.
 
+LISTVIEW_PAGE_OFFSET_MAX = 60000  # 数据超过多少条, 自动切换成游标分页, 如果要禁止游标分页, 请设置为0或None
+# LISTVIEW_PAGE_CURSOR_CACHE = 600  # 游标缓存秒数, 减少重复查找定位
+LISTVIEW_PAGE_CURSOR_UNIQUE_FIELD = 'pk'  # 游标分页时为生成唯一序列, 业务字段排序后, 再按无重复数据字段排序(倒序加-)
+LISTVIEW_PAGE_CURSOR_KWARGS = 'cursor'  # 前端提供的游标定位数据--参数名
 
 '''
 MyRouter自动url, 相关参数宏观配置

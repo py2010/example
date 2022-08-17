@@ -72,19 +72,32 @@ class MetaClass(type):
         # 正向field.contribute_to_class()
         # 为兼容(虚拟关联字段和model本身真实字段重名), 将虚拟字段设置到VirtualRelation,
         cls._fields = {}
-        for name in dir(cls):
+        for name, obj in cls.__dict__.copy().items():
             if name.startswith('__'):
                 continue
-            obj = getattr(cls, name)
             if hasattr(obj, 'contribute_to_class'):
-                cls.check_field(obj)
+                cls._check_vr_field(obj)
                 obj.contribute_to_class(cls, name)
 
-    def check_field(cls, field):
+    def _check_vr_field(cls, field):
         if isinstance(field, related._dj.ForeignKey):
             if not isinstance(field, related.ForeignKey):
                 # 复制model中的字段, 比如 models.ForeignKey(), 未改成 vr.ForeignKey()
                 raise exceptions.FieldError(f'字段配置错误, 关联字段{field}不是虚拟字段?')
+
+    def _check_field_name_clashes(cls, field):
+        if field.attname == field.name:
+            raise exceptions.FieldError(f'{field} 关联字段attname不能和name相同!')
+        for name in [field.name, field.attname]:
+            if name in cls._fields:
+                raise exceptions.FieldError(
+                    f'models.E006: {field}字段名冲突, "{name}"名称已被{cls._fields[name]}占用!'
+                )
+
+    def add_field(cls, field):
+        cls._check_field_name_clashes(field)
+        cls._fields[field.name] = field
+        cls._fields[field.attname] = field
 
     def get_field(cls, name):
         try:

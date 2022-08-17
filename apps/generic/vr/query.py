@@ -58,7 +58,7 @@ def prefetch_one_field(model_instances, field_name, select_fields=[]):
         一是SQL查询所有字段, 二是模板取数时大量单条where查询所需字段数据, 目前为第一种方案.
         如果有自定义模板, 需额外使用其它字段时, 可以自行指定prefetch_fields(list_fields)
         '''
-        select_fields = []  # SQL查询所有字段, 如果不想表查所有字段, 字段配置时末尾应当为普通字段
+        select_fields = []  # SQL查询所有字段, 如果不想表查所有字段, 字段配置时__末尾应当为普通字段
 
     for obj in model_instances:
         if not hasattr(obj, '_prefetched_objects_cache'):

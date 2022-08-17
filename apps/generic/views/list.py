@@ -9,6 +9,7 @@ from django.db.models.fields.reverse_related import ForeignObjectRel, ManyToOneR
 from django.db.models.fields.related import RelatedField, ForeignKey
 
 from .base import TemplateMixin, MyMixin
+from .pagination import CursorPaginator, NullFieldCursorPaginator
 from .. import conf
 from .. import vr
 
@@ -207,15 +208,23 @@ class PageListView(QueryListView):
     分页ListView, 支持url请求参数:
         page: 页码
         pagesize: 每页条数 (最大限制100条)
+        order_by: 排序字段, 多个以半角逗号间隔
     '''
 
     paginate_by = conf.LISTVIEW_PAGE_SIZE  # 每页条数
     # paginate_orphans = 3  # 尾页少于数量则合并到前一页
 
+    ordering_kwarg = conf.LISTVIEW_ORDERING_KWARG  # 字段排序--参数名
     page_kwarg = conf.LISTVIEW_PAGE_KWARG  # url页码参数名称
     page_size_kwarg = conf.LISTVIEW_PAGE_SIZE_KWARG  # url参数PageSize名称, 类似page_kwarg
     page_size_list = conf.LISTVIEW_PAGE_SIZE_LIST  # 前端PageSize选择列表
     js_table_data = None  # 开启DataTable.js前端表格分页
+
+    paginator_class = CursorPaginator
+    cursor_offset_max = conf.LISTVIEW_PAGE_OFFSET_MAX  # 数据超过多少条, 自动切换成游标分页 (游标分页最大偏移量)
+    cursor_unique_field = conf.LISTVIEW_PAGE_CURSOR_UNIQUE_FIELD
+    # 游标分页时, 原排序字段基础上增加当前唯一索引字段, 用于生成唯一序列, 倒序加'-'比如'-id'
+    cursor_kwargs = conf.LISTVIEW_PAGE_CURSOR_KWARGS  # 前端提供的游标定位数据--参数名
 
     def get_context_data(self, *args, **kwargs):
 
@@ -229,7 +238,8 @@ class PageListView(QueryListView):
         if context_data.get('is_paginated'):
             # 生成url参数，用于各分页链接，不包含page=xx参数本身
             context_data['u_args'] = [
-                f'{arg}={val}' for arg, val in self.request.GET.items() if arg != self.page_kwarg
+                f'{arg}={val}' for arg, val in
+                self.request.GET.items() if arg not in (self.page_kwarg, self.cursor_kwargs)
             ]
             context_data['page_range'] = self.get_page_range(context_data['page_obj'])
 
@@ -244,11 +254,37 @@ class PageListView(QueryListView):
         num_pages = page_obj.paginator.num_pages
         if num_pages > 10:
             # 页数太多时不全显示，只显示当前页附近页码
-            PAGES = 3  # 附近页数
+            PAGES = 5  # 附近页数
             page_range_1 = max(1, page_obj.number - PAGES)  # 显示的起始页码
             page_range_2 = min(num_pages + 1, page_obj.number + 1 + PAGES)  # 显示的结束页码
             page_range = range(page_range_1, page_range_2)
         return page_range
+
+    def get_ordering(self):
+        ordering = self.request.GET.get(self.ordering_kwarg)  # 排序字段 -- 来自前端的优先级最高
+        if ordering:
+            logger.debug(f'来自前端--排序字段: {ordering}')
+            return ordering.split(',')
+        return super().get_ordering()
+
+    def paginate_queryset(self, queryset, page_size):
+        if issubclass(self.paginator_class, CursorPaginator) and self.cursor_offset_max:
+            # 可支持大数据游标分页
+            paginator = self.get_paginator(
+                queryset, page_size, orphans=self.get_paginate_orphans(),
+                allow_empty_first_page=self.get_allow_empty())
+            paginator.init(self)
+
+            page_kwarg = self.page_kwarg
+            page = self.kwargs.get(page_kwarg) or self.request.GET.get(page_kwarg) or 1
+            cursor = self.request.GET.get(self.cursor_kwargs)  # 游标
+
+            page_number, page_object_list = paginator.check_cursor(cursor, page)
+            if paginator.cursor:
+                return paginator.paginate_queryset(page_number, page_object_list)
+
+        # 小数据无需游标分页, 或在ModelView中自定义的其它类型Paginator
+        return super().paginate_queryset(queryset, page_size)
 
 
 class VirtualRelationListView(PageListView):

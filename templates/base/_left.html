@@ -91,7 +91,23 @@
 
 
 
+            <li>
+                <a><i class="fa fa-book"></i> <span class="nav-label">大数据游标</span>
+                    <span  class="fa arrow"> </span></a>
+                <ul class="nav nav-second-level">
+                    <li>{% show_menu_url '主机(非Null排序)' 'b:host_list' 'b.view_host' %}</li>
+                    <li>{% show_menu_url '用户(支持Null排序)' 'b:user_list' 'b.view_user' %}</li>
 
+                    <!-- <li>
+                        <a><span class="nav-label">ID排序</span> <span  class="fa arrow"> </span></a>
+                        <ul class="nav nav-third-level">
+                            <li><a href="/b/host/?ordering=id">主机</a></li>
+                            <li><a href="/b/user/?ordering=id">用户</a></li>
+                        </ul>
+                    </li> -->
+
+                </ul>
+            </li>
 
 
 

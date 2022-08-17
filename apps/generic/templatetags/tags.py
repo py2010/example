@@ -3,7 +3,7 @@
 
 import logging
 from django import template
-from generic.views import lookup_val
+from generic.views import lookup_val, pagination
 register = template.Library()
 logger = logging.getLogger()
 
@@ -23,6 +23,7 @@ def add(*args):
 
 
 register.filter(lookup_val)  # 列表页获取 object.field_name
+register.filter(pagination.Cursor.encode_cursor)  # 列表分页生成游标定位数据
 
 
 # @register.simple_tag

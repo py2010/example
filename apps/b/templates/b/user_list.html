@@ -1,0 +1,24 @@
+{% extends "generic/_list.html" %}
+
+
+
+                        {% block form_ext %}
+                            <!-- <select class="input-sm" id="select_pagesize" onchange="window.location.href='?ordering='+this.value"> -->
+                            <select class="input-sm" id="select_pagesize" onchange="window.location.href='?ordering='+this.options[this.selectedIndex].text">
+
+                                <option>修改排序</option>
+                                    <option>id</option>
+                                    <option>-id</option>
+                                    <option>p,id</option>
+                                    <option>-p,-id</option>
+                                    <option>name</option>
+                                    <option>sex,name</option>
+                                    <option>-sex,-name</option>
+                                    <option>p,-name</option>
+                                    <option>-p,name</option>
+                                    <option>p,name,id</option>
+                                    <option>-p,-name,-id</option>
+                                    <option>p,sex,name</option>
+                            </select>
+
+                        {% endblock %}

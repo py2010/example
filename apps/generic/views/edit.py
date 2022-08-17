@@ -3,6 +3,7 @@ import logging
 
 from django.views.generic import CreateView, UpdateView
 from django.urls import reverse_lazy
+from django.forms.models import ModelChoiceField
 
 from .base import MyMixin
 logger = logging.getLogger()
@@ -14,6 +15,26 @@ class FormMixin:
     #     if self.form_class is None and self.fields is None:
     #         self.fields = '__all__'
     #     return super().get_form_class()
+
+    def get_form(self, form_class=None):
+        # 大数据表外键, 未自定义视图/模型FORM/模板, 编辑页默认的ModelForm打开太慢
+        form = super().get_form(form_class)
+        for name, field in form.fields.items():
+            if hasattr(field, 'queryset'):
+                if isinstance(field, ModelChoiceField):
+                    # 外键大数据只显示前面1000条
+                    n = 1000
+                    qs = field.queryset[:n]
+                    if qs.count() >= n:
+                        logger.warning(
+                            f'大数据页面为了性能, {qs.model}表超出{n}条后的数据将不显示,'
+                            '请按需自定义视图/模板, 比如带搜索功能的Ajax二次请求大表数据'
+                        )
+                        field.queryset = qs
+                else:
+                    # 多对多
+                    pass
+        return form
 
     def get_success_url(self):
         # 保存完成后, 跳转url

@@ -1,7 +1,15 @@
 #!/bin/bash
 
-project=xyf
+# f=`basename $0` #当前文件名d
+p="$( cd "$( dirname "$0"  )" && pwd  )" #脚本目录c路径
+
+base=`dirname "$p"` #项目根目录
+
+cd $base #项目根目录
+
+project=`basename $base`  # 项目目录名
 python=/kf/python/venv/$project/bin/python3
+
 log_level=${LOG_LEVEL:-DEBUG}  # 生产 - 日志级别
 
 port=${DJANGO_PORT:-808}  #默认端口
@@ -13,7 +21,7 @@ if [ "$IPV6" == "0" ];then
 fi
 
 
-# 选择python路径
+# 按优先级, 选择python路径
 pys=($python $PYTHON `which python3` `which python`)
 # echo ${pys[*]}
 for python in ${pys[*]}; do
@@ -24,14 +32,6 @@ for python in ${pys[*]}; do
     fi
     # echo 路径不存在或无执行权限: $python
 done
-
-
-f=`basename $0` #当前文件名d
-p="$( cd "$( dirname "$0"  )" && pwd  )" #脚本目录c路径
-
-base=`dirname "$p"` #项目根目录
-
-cd $base #项目根目录
 
 
 run() {

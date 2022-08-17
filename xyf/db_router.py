@@ -6,31 +6,28 @@ class MyRouter(object):
 
     MAPPING = {
         # '应用名': {
-        #     '模型名小写': '数据库',
+        #     '模型名': '数据库',
         # },
-        # 注意 allow_migrate传递过来的模型名为小写
         'vr': {
             # 虚拟关联示例
             # 'default_model': 'vr',
-            'demo': 'vr',
-            'middle': 'vr',
+            'Demo': 'vr',
+            'Middle': 'vr',
+        },
+        'b': {
+            # 大数据游标分页
+            'default_model': 'big',
         },
     }
 
-    def get_db(self, app_label, model_name, model=None):
-        # print(app_label, model_name, kwargs, 55555555555)
-        try:
-            model_db = self.MAPPING[app_label][model_name.lower()]
-        except Exception:
-            model_db = 'default'
-        return model_db
-
     def get_model_db(self, model):
         #  获取模型对应的db
-        if model.__module__ == 'sicpay.models_gf':
+        if model.__module__ == 'pay.models.gf':
             return 'gf'
         app_label = model._meta.app_label
-        return self.get_db(app_label, model.__name__, model=model)
+        if app_label in self.MAPPING:
+            label_db = self.MAPPING[app_label]
+            return label_db.get(model.__name__) or label_db.get('default_model')
 
     def db_for_read(self, model, **hints):
         """
@@ -55,21 +52,14 @@ class MyRouter(object):
         如果没有路由有意见（比如所有路由返回 None），则只允许同一个数据库内的关系。
         """
         # return True  # 允许跨库关联 (比如虚拟外键: Model为外键, DB为普通字段)
-        db_obj1 = self.get_model_db(obj1.__class__)
-        db_obj2 = self.get_model_db(obj2.__class__)
-        if db_obj1:
-            return db_obj1 == db_obj2
-
-    # def allow_syncdb(self, db, model):
-    #     # 兼容 Django 1.4 - 1.6
-    #     app_label = model._meta.app_label
-    #     model_name = model._meta.model_name
-    #     return self.allow_migrate(db, app_label, model_name)
+        db1 = self.get_model_db(obj1.__class__)
+        db2 = self.get_model_db(obj2.__class__)
+        if db1:
+            return db1 == db2
 
     def allow_migrate(self, db, app_label, model_name=None, **hints):
         '''
-        Django 1.7 - 1.11 - 2.*
-        控制是否允许 migrate, False为不允许, None表示没意见, 允许.
+        控制是否允许 migrate, False为不允许, None表示没意见(允许).
         框架传递过来的参数model_name 为小写的 _meta.model_name
         '''
         # print(db, app_label, model_name, hints, 88888888888)
@@ -77,9 +67,11 @@ class MyRouter(object):
             # 不管 Meta.managed 是不是为 False, 都不migrate
             return False
         model = hints.get('model')
-        if not model:
-            # 未提供model参数
-            return False
-        if app_label in self.MAPPING:
-            model_db = self.get_db(app_label, model_name, model=model)
-            return model_db == db
+        if model:
+            model_db = self.get_model_db(model)
+            if model_db:
+                return db == model_db
+            elif db == 'default':
+                return  # 未定义时, 使用default库
+        return False
+

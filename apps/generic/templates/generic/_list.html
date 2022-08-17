@@ -75,6 +75,9 @@
                                 <!-- 自定义ORM搜索框列表 -->
                             {% endblock %}{% endif %}
                         </div>
+                        {% block form_ext %}
+                            <!-- 其它表单 -->
+                        {% endblock %}
                         <form id="list_object_form" class="form-horizontal  ">
 
                         {% block list_table %}
@@ -140,40 +143,7 @@
 
                         </form>
 
-                        {% if is_paginated %}
-
-                            {% if request.GET.s %}
-                                {% add "s=" request.GET.s as s %}
-                            {% endif %}
-                            {% if u_args %}{% firstof u_args|join:"&" or s as url_args %}{% endif %}
-                            {% firstof view.page_kwarg 'page' as page %}
-
-                        <ul class="pagination pull-right">
-                            {% if page_obj.has_previous %}
-                                <li><a href="?&{{ url_args }}" title="第一页">«</a></li>
-                                <li><a href="?{{ page }}={{ page_obj.previous_page_number }}&{{ url_args }}" title="上一页">‹</a></li>
-                            {% endif %}
-
-                            {% for p in page_range %}
-                                {% if page_obj.number == p %}
-                                <li class="active"><span>{{ p }}</span></li>
-                                {% else %}
-                                <li><a href="?{{ page }}={{ p }}&{{ url_args }}">{{ p }}</a></li>
-                                {% endif %}
-                            {% endfor %}
-
-                            {% if page_obj.has_next %}
-                                <li><a href="?{{ page }}={{ page_obj.next_page_number }}&{{ url_args }}" title="下一页">›</a></li>
-                                {% if paginator.num_pages < 200 %}
-                                <li><a href="?{{ page }}=last&{{ url_args }}" title="最末页">»</a></li>
-                                {% else %}
-                                <!-- 普通分页SQL偏移查询方式(LIMIT/OFFSET)对超大数据支持不好，应改用游标分页 -->
-                                {% endif %}
-                                <li><span>共{{ paginator.num_pages }}页 {{ paginator.count }}条</span></li>
-                            {% endif %}
-                        </ul>
-                        {% endif %}
-
+                        {% include "generic/pagination.html" %}
 
                     </div>
 

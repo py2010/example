@@ -128,7 +128,9 @@ def obj_get_val(obj, field_name, field=None):
         if isinstance(field, (related.RelatedField, reverse_related.ForeignObjectRel)):
             # 关联字段/虚拟关联字段
             if isinstance(field, related.ForeignKey) and not vals:
-                vals = [getattr(obj, field.attname)]  # 外键尝试取数据库字段ID值
+                val = getattr(obj, field.attname)
+                if val is not None:
+                    vals = [val]  # 外键尝试取数据库字段ID值
         else:
             # 普通字段
             vals = [utils.display_for_field(val, field, None) for val in vals]

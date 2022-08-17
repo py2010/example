@@ -1,14 +1,25 @@
 # coding=utf-8
 
 from django.db.models.fields import related as _dj
+from django.db.models.deletion import DO_NOTHING
 from . import related_descriptors
 # from . import reverse_related
 
 
 class ForeignKey(_dj.ForeignKey):
+    '''正向外键'''
 
     column_field = None  # VirtualRelation配置的外键字段--对应在model中的真实字段, column数据库字段需一致.
     # rel_class = reverse_related.ManyToOneRel
+
+    def __init__(self, to, on_delete=DO_NOTHING, **kwargs):
+        super().__init__(to, on_delete, **kwargs)
+
+    # def __setattr__(self, k, v):
+    #     return super().__setattr__(k, v)
+
+    # def __getattr__(self, k):
+    #     return super().__getattribute__(k)
 
     # def get_cache_name(self):
     #     # 为了防止虚拟字段刚好和model本身字段重名, 虚拟关联字段加~
@@ -20,7 +31,6 @@ class ForeignKey(_dj.ForeignKey):
         for field in self.model._meta.local_fields:
             if self.column == field.column:
                 self.column_field = field
-                self.attname = field.attname  # django2.* getattr(vr, vr_field_id) 返回 vr._model_instance.field_id
                 return True
         if not self.column_field:
             # 虚拟外键关联需有真实数据基础, 当前字段db_column配置错误, 或模型中不存在db_column一致的普通字段
@@ -29,18 +39,13 @@ class ForeignKey(_dj.ForeignKey):
                 f'model数据库表不存在字段{self.column}, 或者这个表字段没有对应的model字段'
             )
 
-    def get_attname(self):
-        # django1.* 有时使用self.attname有时使用self.get_attname()
-        if self.column_field:
-            return self.column_field.attname  # getattr(vr, vr_field_id) 返回 vr._model_instance.field_id
-        return '%s_id' % self.name
-
     def contribute_to_class(self, vr, name, **kwargs):
         # field 转 field_descriptor
         self.set_attributes_from_name(name)
         self.model = vr._model
+        self.opts = vr._model._meta
         if self._check_column_field():
-            vr._fields[name] = self
+            vr.add_field(self)
 
             if not vr._model._meta.abstract:
                 def resolve_related_class(model, related_model, field):
@@ -51,6 +56,7 @@ class ForeignKey(_dj.ForeignKey):
 
             descriptor = getattr(related_descriptors, self.forward_related_accessor_class.__name__)(self)
             setattr(vr, name, descriptor)
+            setattr(vr, self.attname, related_descriptors.AttNameField(self.column_field.attname))
 
     # def do_related_class(self, other, cls):
     #     self.set_attributes_from_rel()
@@ -81,6 +87,9 @@ class ForeignKey(_dj.ForeignKey):
 class OneToOneField(_dj.OneToOneField, ForeignKey):
     '''正向o2o'''
     # rel_class = reverse_related.OneToOneRel
+
+    def __init__(self, to, on_delete=DO_NOTHING, **kwargs):
+        super().__init__(to, on_delete, **kwargs)
 
 
 class ManyToManyField(_dj.ManyToManyField):

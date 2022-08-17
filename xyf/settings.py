@@ -66,10 +66,12 @@ INSTALLED_APPS = [
     'a',
     'mirror',
     'vr',
+    'b',
 
 ]
 
 MIDDLEWARE = [
+    # request 上 ==>> 下 --> View --> response 下 ==>> 上
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -77,6 +79,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'generic.middleware.PageRedirectMiddleware',  # 超出游标范围时自动跳转到范围内最近页码
 ]
 
 ROOT_URLCONF = 'xyf.urls'
@@ -151,6 +154,11 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'vr.sqlite3'),
     },
+    'big': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': os.path.join(BASE_DIR, 'big.sqlite3'),
+    },
+
 }
 
 DATABASE_ROUTERS = ['xyf.db_router.MyRouter']

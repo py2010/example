@@ -1,7 +1,11 @@
 # coding=utf-8
 
+import logging
 from django import __version__
+from django.db.models.query_utils import DeferredAttribute
 from django.db.models.fields import related_descriptors as _dj
+
+logger = logging.getLogger()
 
 
 class FieldCacheMixin:
@@ -19,7 +23,10 @@ class FieldCacheMixin:
         except KeyError:
             if __version__ < '2':
                 return getattr(instance, cache_name)
-            raise Exception('目前vr功能只用于列表页, 为了SQL性能暂不支持单条vr查询! 请检查列表页vr功能异常.')
+            logger.warning('不存在的虚拟外键数据, 或者程序异常:')
+            logger.warning('目前vr功能只用于列表页, 为了SQL性能暂不支持单条vr查询! 请检查列表页vr功能异常.')
+            raise
+            # 返回None
 
     def is_cached(self, instance):
         return self.get_cache_name() in instance._state.fields_cache
@@ -179,4 +186,17 @@ def rewrite_reverse_many_to_one_manager(related_manager_cls):
     related_manager_cls.get_prefetch_queryset = get_prefetch_queryset
 
 
+class AttNameField(DeferredAttribute):
+    '''
+    用于 getattr(vr, vr_field_id) 取虚拟关联字段数据库值, 返回 vr._model_instance.field_id
+    '''
+
+    def __init__(self, field_name, model=None):  # 兼容django 1.*, 多了model参数
+        self.field_name = field_name
+
+    def __get__(self, instance, cls=None):
+        if instance is None:
+            return self
+        instance = instance._model_instance
+        return super().__get__(instance, cls)
 
