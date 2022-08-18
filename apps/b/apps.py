@@ -1,6 +1,6 @@
 from django.apps import AppConfig
 
 
-class VrConfig(AppConfig):
-    name = 'vr'
-    verbose_name = '虚拟关联示例'
+class BConfig(AppConfig):
+    name = 'b'
+    verbose_name = '大数据游标分页'

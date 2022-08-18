@@ -39,9 +39,10 @@ class CursorPaginator(Paginator):
         # 将View参数传递到分页器
         self.OFFSET_MAX = view.cursor_offset_max
         self.cursor_unique_field = view.cursor_unique_field
-        if self.cursor_unique_field == 'pk':
+        if self.cursor_unique_field in ('pk', '-pk'):
             # self.cursor_unique_field = queryset.get_meta().pk.name
-            self.cursor_unique_field = view.model._meta.pk.name
+            pk = view.model._meta.pk.name
+            self.cursor_unique_field = f'-{pk}' if self.cursor_unique_field.startswith('-') else pk
 
     def paginate_queryset(self, page_number, page_object_list):
         # 大数据游标分页
@@ -64,6 +65,7 @@ class CursorPaginator(Paginator):
         return max(page_number, page_min, 1)
 
     def check_cursor(self, cursor, page):
+        # 根据前端游标和页码参数, 进行初始化检查及游标定位取数, 生成最终合法页码及对应的页数据
         self.check_cursor_unique_field()
         self.cursor = Cursor(cursor, self.get_queryset_order_by(), self.OFFSET_MAX)
 
@@ -105,8 +107,8 @@ class CursorPaginator(Paginator):
 
     def cursor_queryset(self, offset, reverse=False):
         '''
-        queryset 是唯一序列的所有数据集, 去掉游标位置及之前/后的数据, 取游标之后/前的所有数据集,
-        为了SQL性能, 定位使用where过虑而不是offset, 且生成的新queryset而不提交事务查询IO,
+        queryset 是唯一序列的所有数据集, 去掉游标位置之前/后的数据, 取游标之后/前的所有数据集,
+        为了SQL性能, 定位使用where过滤而不是offset, 且生成新的queryset而不提交事务查询IO,
         因为新queryset后续还需要进行取分页数据(有小范围offset).
 
         特殊情况offset为0, 表示打开页包含游标数据本身, reverse=True 页尾为游标, False则页首为游标.
@@ -117,22 +119,23 @@ class CursorPaginator(Paginator):
         if reverse:
             # 向前翻页, 由于QuerySet不支持取末尾切片数据, 更不能为此提交数据库IO查询所有数据集,
             # 将qs反向排序, 再从游标偏移取得页数据切片, 返回逆序对象 (为了SQL性能, 仍然懒处理)
-            self.count_set(min(self.cursor.sn_max - self.before, self.OFFSET_MAX + self.per_page))  # ############
+            self.count_set(min(self.cursor.sn_max - self.before, self.OFFSET_MAX + self.per_page))
             # return qs[offset - self.per_page: offset]
             qs = qs.order_by(*[
                 i[1:] if i.startswith('-') else f'-{i}'
                 for i in self.cursor.order_by
             ])
-            return Reverse(qs[abs(offset): self.per_page + abs(offset)])  # 反序数据进行逆序
+            return Reverse(qs[abs(offset): self.per_page + abs(offset)])  # 反序数据再逆序, 负负得正使顺序不变
         else:
+            # 向后翻页
             count_max = offset + self.OFFSET_MAX + self.per_page
             if self.before + count_max > self.cursor.sn_max:
-                # 向后翻页探索到新的最大数量
+                # 向后翻页时需探索新的最大数量
                 count = self.count_check(qs, count_max)
-                print(f'count_max: {count}')
+                # print(f'count_max: {count}')
                 self.count_set(count, True)  # ############
                 if count < count_max:
-                    # 探索到末尾 (页后面数据量小于OFFSET_MAX)
+                    # 探索到末尾 (比如页后面数据量小于OFFSET_MAX)
                     self.count_end = self.cursor.sn_max
             else:
                 # 数据量末超过之前探索的最大值, SQL无需count(*)探索数量
@@ -168,9 +171,10 @@ class CursorPaginator(Paginator):
         return self.object_list.filter(q)
 
     def check_cursor_unique_field(self):
+        # 检查queryset排序, 必需为唯一序列, 业务排序字段最后面自动加上cursor_unique_field进行排序
         order_by = self.get_queryset_order_by()
         if self.cursor_unique_field not in order_by and f'-{self.cursor_unique_field}' not in order_by:
-            # queryset 必需是唯一序列, 当表数据不再变化时, 各数据排序位置固定.
+            # queryset 必需是唯一序列, 所以按业务排序后再按unique_field排, 当表数据不再变化时, 各数据排序位置固定.
             order_by += (self.cursor_unique_field,)
             self.object_list = self.object_list.order_by(*order_by)
 
@@ -180,6 +184,7 @@ class CursorPaginator(Paginator):
 
     def count_check(self, queryset, _max=None):
         # 向后翻页, 探索打开的页面之后还有多少数据量, 探索量最大不超过_max
+        # 为了count(*)性能只探索小范围, 且删除排序, 因为探索游标位置后面还有多少数量和排序无关
         if not _max:
             _max = self.OFFSET_MAX + self.per_page
         qs = queryset[:_max]
@@ -187,7 +192,7 @@ class CursorPaginator(Paginator):
         return qs.count()
 
     def count_set(self, count, save=False):
-        '''游标分页时, 为了SQL性能, 设置self.count值, 使避免SQL count(*)统计所有数量'''
+        '''游标分页时, 为了SQL性能, 设置self.count值, 使避免用户业务程序SQL count(*)统计所有数量'''
         self.count = count + self.before
         if save:
             # 探索得的最大数量, 保存到游标中, 使打开前面页面不用再探索数量 (向前翻页时)
@@ -273,10 +278,10 @@ class Cursor:
     @staticmethod
     def encode_cursor(page_obj):
         '''
-        生成游标URL参数供前端使用. 当前功能只用在模板调用,
+        生成游标URL参数供前端使用. 当前功能只用在HTML模板调用,
         因为分页object_list还未提交IO查出页面数据, 以免SQL查出所有字段
         '''
-        object_list = list(page_obj.object_list)
+        object_list = list(page_obj.object_list)  # 为防止select *, 必需是在此之前已提交了IO查出结果
         if object_list:
             obj = object_list[0]  # 当前页面首条数据做为游标
             sn = (page_obj.number - 1) * page_obj.paginator.per_page + 1  # 游标序号
@@ -339,8 +344,8 @@ def get_bool(*args):
 为了数据库性能和索引效率, 建议排序字段都应当为非Null索引字段, 只对接第三方非标数据库才做Null处理.
 
 注意:
-django字段排序支持指定null最小/最大, 当前为简化处理只按不同数据库类型默认顺序来处理,
-所以QuerySet.order_by()有指定null排序时, 将会有问题, 且排序比较时需增加额外处理.
+django字段排序支持指定null最小/最大, 当前为简化处理只按不同数据库类型默认顺序来处理: check_null_order()
+所以QuerySet.order_by()有指定null排最前或最后时会有问题, 大家按需扩展开发, 比如排序比较时需额外处理.
 '''
 
 

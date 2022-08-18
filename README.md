@@ -21,7 +21,7 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
         apps/a/        # 业务app, 常用功能演示 (数据库: default)
         apps/mirror/   # 业务app, 零代码演示, 全自动生成 http://127.0.0.1:808/mirror/各models页-增删改查/
         apps/vr/       # 业务app, 虚拟外键/多对多演示, 分布式跨库join查询, 多表跨库全自动关联 (数据库: vr, default)
-        apps/b/        # 业务app, 大数据游标分页示例, 默认数据很少, 请使用manage命令增加数据. (数据库: b)
+        apps/b/        # 业务app, 大数据游标分页示例, 默认数据很少, 请使用manage命令增加数据. (数据库: big)
 
 
 * 环境：
@@ -82,12 +82,12 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
 
         数据库big.sqlite3只有少量数据, 因为配置的偏移范围较小, 用于程序功能准确性测试, 检验锚点偏移取数是否正确.
         如果想测试SQL性能效果, 需要增加大量数据才好测试SQL性能, 数据多了可适当将偏移值设大, 便于大步进翻页.
-        已做好命令脚本, 可以执行 c/d data 或 python3 manage data增加数据, 表User会有随机null数据用于测试空排序.
-        c/d data -h (查看命令帮助信息, 或 python3 manage data -h)
+        已做好命令脚本, 可以执行 c/d data 或 python3 manage.py data增加数据, 表User会有随机null数据用于测试空排序.
+        c/d data -h (查看命令帮助信息, 或 python3 manage.py data -h)
         c/d data 10000     (表Host和表User各增加一万条数据)
         c/d data u 5000000 (表User增加五百万条数据)
         c/d data h 100000  (表Host增加十万条数据)
-        游标功能程序位于 apps/generic/views/pagination.py 文件, CursorPaginator为游标分页器,
+        游标功能程序位于 apps/generic/views/pagination.py 文件, CursorPaginator为默认游标分页器,
         NullFieldCursorPaginator 增加了null排序支持, 只支持各数据库默认的null排序,
         比如mysql的规则null最小, PG规则null最大,
         NULLS_FIRST = {
@@ -107,6 +107,8 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
         大数据时SQL性能优秀, 如果使用django原生分页, 翻到后面尤其是尾页就非常慢,
         因为普通分页翻页时, SQL都是从第一页开头进行超大范围OFFSET, 效率极差.
         而游标分页都是在前一次打开的页面数据基础上进行小范围OFFSET, 不用再从头开始, SQL很快.
+        大家可以访问 http://127.0.0.1:808/b/host/ 按各排序看效果如何,
+        我默认已开启了打印SQL日志, 和普通分页相比, 游标分页效果非常明显.
 
 
 * 二次开发(django-views-templates)

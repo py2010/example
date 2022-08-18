@@ -23,7 +23,7 @@ class FieldCacheMixin:
         except KeyError:
             if __version__ < '2':
                 return getattr(instance, cache_name)
-            logger.warning('不存在的虚拟外键数据, 或者程序异常:')
+            # logger.warning('不存在的虚拟外键数据, 或者程序异常:')
             logger.warning('目前vr功能只用于列表页, 为了SQL性能暂不支持单条vr查询! 请检查列表页vr功能异常.')
             raise
             # 返回None

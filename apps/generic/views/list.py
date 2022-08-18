@@ -135,8 +135,8 @@ class QueryListView(ListView):
     搜索过滤, filter_fields 配置格式同 list_fields
     '''
     filter_fields = []  # 使用模糊搜索多字段功能
-    filter_orm_fields = conf.LISTVIEW_FILTER_ORM_FIELDS  # ORM过滤字段列表
-    filter_orm_prefix = conf.LISTVIEW_FILTER_ORM_PREFIX  # 字段参数前缀
+    filter_orm_fields = conf.LISTVIEW_FILTER_ORM_FIELDS  # ORM过滤字段列表，列表或'__all__'.
+    filter_orm_prefix = conf.LISTVIEW_FILTER_ORM_PREFIX  # ORM过滤字段参数前缀
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -221,10 +221,11 @@ class PageListView(QueryListView):
     js_table_data = None  # 开启DataTable.js前端表格分页
 
     paginator_class = CursorPaginator
-    cursor_offset_max = conf.LISTVIEW_PAGE_OFFSET_MAX  # 数据超过多少条, 自动切换成游标分页 (游标分页最大偏移量)
+    cursor_offset_max = conf.LISTVIEW_PAGE_CURSOR_OFFSET_MAX  # 数据超过多少条, 自动切换成游标分页 (游标分页最大偏移量)
     cursor_unique_field = conf.LISTVIEW_PAGE_CURSOR_UNIQUE_FIELD
     # 游标分页时, 原排序字段基础上增加当前唯一索引字段, 用于生成唯一序列, 倒序加'-'比如'-id'
     cursor_kwargs = conf.LISTVIEW_PAGE_CURSOR_KWARGS  # 前端提供的游标定位数据--参数名
+    cursor_order_fields = conf.LISTVIEW_PAGE_CURSOR_ORDER_FIELDS  # 允许前端控制排序的字段，列表或'__all__'.
 
     def get_context_data(self, *args, **kwargs):
 
@@ -264,7 +265,13 @@ class PageListView(QueryListView):
         ordering = self.request.GET.get(self.ordering_kwarg)  # 排序字段 -- 来自前端的优先级最高
         if ordering:
             logger.debug(f'来自前端--排序字段: {ordering}')
-            return ordering.split(',')
+            # 验证前端排序字段是否在允许列表
+            fs = ordering.split(',')
+            if self.cursor_order_fields == '__all__':
+                return fs
+            elif self.cursor_order_fields:
+                return [f for f in fs if f in self.cursor_order_fields]
+        # 前端未提供排序字段或不合法, 使用self.ordering或QuerySet本身指定的排序
         return super().get_ordering()
 
     def paginate_queryset(self, queryset, page_size):
