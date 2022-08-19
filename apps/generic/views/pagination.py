@@ -24,6 +24,9 @@ class CursorPaginator(Paginator):
          则将打开游标数据(向前或向后)最远能偏移的页面.
 
     注意: 如果排序字段有Null值, 请使用 NullFieldCursorPaginator 分页器
+         游标缺点是当数据有修改变化时, 唯一序列不一定是实时的, 而是基于打开第一页时当时状态.
+         游标后面的数据有修改时, 修改后仍然在游标后面, 则不会有影响.
+         但游标前面的数据有变动, 通常容易产生影响, 比如序号变化, 排序位置变化.
 
     self.OFFSET_MAX: 当查询符合条件的数据少于值, 则为常规页码分页, 否则切换为游标分页.
                      数值越大, 往后翻页最大步进就越大, 太大则SQL偏移性能就慢.
@@ -70,11 +73,15 @@ class CursorPaginator(Paginator):
         self.cursor = Cursor(cursor, self.get_queryset_order_by(), self.OFFSET_MAX)
 
         page_number = self.get_page_number(page)
-        if page_number > 2 and self.cursor.sn:
+        if self.cursor.sn and page_number > (self.OFFSET_MAX / self.per_page) * 0.7:
+            # 在最大偏移量以内的小页码, 可以按需不使用游标定位, 系数<=1, 建议>0.4,
+            # 减少因数据变动导致唯一序列变化带来的影响, 不用翻到第一页才刷新唯一序列.
             page_number, offset, reverse = self.get_offset(page_number)  # 游标偏移
             return page_number, self.cursor_queryset(offset, reverse)  # 游标定位取数
+            # if self.count_end and page_number > self.num_pages:
+            #     raise Http404('本页结果为空, 非法翻页或者可能有数据已删除, 导致最大页码已减小.')
         else:
-            # 无游标定位
+            # 无游标定位, 对整个唯一序列进行刷新(游标分页时)
             count_max = self.count_check(self.object_list, page_number * self.per_page + self.OFFSET_MAX)
             self.count_set(count_max, True)
 
@@ -290,6 +297,7 @@ class Cursor:
             data = '%00'.join(StrNone.to_uri(vals))
             # data = '%00'.join(vals)
             return f"{sn}/{page_obj.paginator.cursor.sn_max}:{','.join(order_by)}%00{data}"
+        raise Http404('本页结果为空, 非法翻页或者可能有数据已删除, 导致最大页码已减小.')
 
     def decode_cursor(self, cursor, qs_order_by):
         '''

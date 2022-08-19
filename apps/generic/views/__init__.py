@@ -116,7 +116,9 @@ def get_attr(obj, attr):
         sub = getattr(obj, attr, None)
         if isinstance(sub, Manager):
             return [i for i in sub.all()]
-        elif sub:
+        # elif sub is None:
+        #     1
+        else:
             return [sub]
     return []
 
@@ -133,12 +135,14 @@ def obj_get_val(obj, field_name, field=None):
                     vals = [val]  # 外键尝试取数据库字段ID值
         else:
             # 普通字段
-            vals = [utils.display_for_field(val, field, None) for val in vals]
+            vals = [utils.display_for_field(val, field, EMPTY_VALUE_DISPLAY) for val in vals]
     return vals
 
 
-def display_vals(vals):
-    return format_html('<br/>'.join([str(val) for val in vals])) or EMPTY_VALUE_DISPLAY
+def display_vals(vals, empty_value_display=EMPTY_VALUE_DISPLAY):
+    return format_html('<br/>'.join([
+        str(val) for val in vals if val is not None
+    ])) or empty_value_display
 
 
 '''
