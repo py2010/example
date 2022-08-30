@@ -23,7 +23,6 @@ class FieldCacheMixin:
         except KeyError:
             if __version__ < '2':
                 return getattr(instance, cache_name)
-            # logger.warning('不存在的虚拟外键数据, 或者程序异常:')
             logger.warning('目前vr功能只用于列表页, 为了SQL性能暂不支持单条vr查询! 请检查列表页vr功能异常.')
             raise
             # 返回None
@@ -93,12 +92,10 @@ class ReverseOneToOneDescriptor(VirtualRelationDescriptor, _dj.ReverseOneToOneDe
             if __version__ > '2':
                 self.related.field.set_cached_value(rel_obj, instance)
             else:
-                1  # 反向本来就可以不联接
+                '略 (仅仅列表页虚拟关联, 不会再反向找关联模型)'
 
-        if __version__ < '2':
-            return queryset, rel_obj_attr, instance_attr, True, self.related.get_cache_name()
-        else:
-            return queryset, rel_obj_attr, instance_attr, True, self.related.get_cache_name(), False
+        is_descriptor = [] if __version__ < '2' else [False]
+        return [queryset, rel_obj_attr, instance_attr, True, self.related.get_cache_name()] + is_descriptor
 
 
 class ReverseManyToOneDescriptor(_dj.ReverseManyToOneDescriptor):
@@ -170,10 +167,8 @@ def rewrite_reverse_many_to_one_manager(related_manager_cls):
             setattr(rel_obj._vr, self.field.name, instance._model_instance)  # 反方向也可以缓存 (当前列表页功能实际用不上)
         cache_name = self.field.remote_field.get_cache_name() if __version__ > '2' else self.field.related_query_name()
 
-        if __version__ < '2':
-            return queryset, rel_obj_attr, instance_attr, False, cache_name
-        else:
-            return queryset, rel_obj_attr, instance_attr, False, cache_name, False
+        is_descriptor = [] if __version__ < '2' else [False]
+        return [queryset, rel_obj_attr, instance_attr, False, cache_name] + is_descriptor
 
     old_init = related_manager_cls.__init__
 
@@ -191,8 +186,13 @@ class AttNameField(DeferredAttribute):
     用于 getattr(vr, vr_field_id) 取虚拟关联字段数据库值, 返回 vr._model_instance.field_id
     '''
 
-    def __init__(self, field_name, model=None):  # 兼容django 1.*, 多了model参数
-        self.field_name = field_name
+    def __init__(self, column_field, model=None):  # 兼容django 1.*, 多了model参数
+        if __version__ < '3':
+            # django1和2
+            self.field_name = column_field.attname
+        else:
+            # django3和4
+            self.field = column_field
 
     def __get__(self, instance, cls=None):
         if instance is None:

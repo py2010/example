@@ -14,6 +14,7 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
         4. 可使用自动路由, urls/views/templates全自动处理
         5. 大数据游标分页, 比如当表数据百万/上亿时, 为了SQL性能, 使django支持游标分页, 支持配置小范围游标偏移,
            可按业务需求支持多字段排序, 业务排序字段数据可重, 排序字段可支持null数据, 自动唯一序列--游标精确偏移一丝不差!
+           查询过滤匹配数据较少时, 自动使用普通分页, 比如查询结果只有几页, 这时没必要使用游标分页.
 
 * app:
 
@@ -64,6 +65,13 @@ django-low-code 低代码演示, 项目 https://github.com/py2010/django-generic
         http://127.0.0.1:808/b/host/?ordering=p,-id
         http://127.0.0.1:808/b/host/?ordering=-p,status,asset_type,name
         http://127.0.0.1:808/b/user/?ordering=p,sex,name
+        # 如果ORM过滤数据, 比如查询名称含"n658"的主机数据, 数据量少则智能切换为普通分页:
+        http://127.0.0.1:808/b/host/?name__icontains=n658
+        # 姓赵用户的主机列表, 根据查询结果有多少数量, 智能使用游标或普通分页
+        http://127.0.0.1:808/b/host/?ordering=p&user__name__icontains=赵
+
+        # 各种功能目前后端已比较完善, 而前端界面由于美观需要, Form文本框/按钮样式/位置摆放等,
+        # 大家通常会对各页面自定义编排, 所以做的那几个示例页前端都比较单纯, 能演示后端功能即可.
 
 
 * 常规功能演示图

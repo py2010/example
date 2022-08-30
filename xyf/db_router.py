@@ -6,17 +6,18 @@ class MyRouter(object):
 
     MAPPING = {
         # '应用名': {
+        #     'model_default_db': '应用名下模型默认的数据库',
         #     '模型名': '数据库',
         # },
         'vr': {
             # 虚拟关联示例
-            # 'default_model': 'vr',
-            'Demo': 'vr',
-            'Middle': 'vr',
+            'model_default_db': 'vr',
+            # 'Demo': 'vr',
+            # 'Middle': 'vr',
         },
         'b': {
             # 大数据游标分页
-            'default_model': 'big',
+            'model_default_db': 'big',
         },
     }
 
@@ -27,7 +28,7 @@ class MyRouter(object):
         app_label = model._meta.app_label
         if app_label in self.MAPPING:
             label_db = self.MAPPING[app_label]
-            return label_db.get(model.__name__) or label_db.get('default_model')
+            return label_db.get(model.__name__) or label_db.get('model_default_db')
 
     def db_for_read(self, model, **hints):
         """
@@ -38,7 +39,6 @@ class MyRouter(object):
 
         如果没有建议，则返回 None, 使用默认数据库。
         """
-        # print(model, self.get_model_db(model), 333333333)
         return self.get_model_db(model)
 
     db_for_write = db_for_read
@@ -62,7 +62,6 @@ class MyRouter(object):
         控制是否允许 migrate, False为不允许, None表示没意见(允许).
         框架传递过来的参数model_name 为小写的 _meta.model_name
         '''
-        # print(db, app_label, model_name, hints, 88888888888)
         if db == 'java':
             # 不管 Meta.managed 是不是为 False, 都不migrate
             return False

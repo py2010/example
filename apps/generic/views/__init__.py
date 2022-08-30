@@ -104,9 +104,10 @@ def attrgetter(objs, *names):
 def itemgetter(objs, func, *args, **kwargs):
     # 为便于处理, func() 需返回列表, 当前函数最终返回一维列表数据
     vals = []
-    for i in set(objs):
-        val = func(i, *args, **kwargs)
-        vals.extend(val)
+    for obj in set(objs):
+        if obj:
+            val = func(obj, *args, **kwargs)
+            vals.extend(val)
     return vals
 
 

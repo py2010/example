@@ -26,7 +26,7 @@ class CursorPaginator(Paginator):
     注意: 如果排序字段有Null值, 请使用 NullFieldCursorPaginator 分页器
          游标缺点是当数据有修改变化时, 唯一序列不一定是实时的, 而是基于打开第一页时当时状态.
          游标后面的数据有修改时, 修改后仍然在游标后面, 则不会有影响.
-         但游标前面的数据有变动, 通常容易产生影响, 比如序号变化, 排序位置变化.
+         但游标前面的数据(排序字段数据)有变动, 可能会产生影响, 比如序号变化, 排序位置变化.
 
     self.OFFSET_MAX: 当查询符合条件的数据少于值, 则为常规页码分页, 否则切换为游标分页.
                      数值越大, 往后翻页最大步进就越大, 太大则SQL偏移性能就慢.
@@ -164,8 +164,8 @@ class CursorPaginator(Paginator):
                     f'当前游标分页器{self.__class__}只支持非Null字段排序,\n'
                     '如果排序字段含Null数据, 请修改游标分页器配置, 比如使用 NullFieldCursorPaginator'
                 )
-            equal = 'e' if field == self.cursor_unique_field or f'-{field}' == self.cursor_unique_field else ''
-            # equal, 查询集包含游标数据本身, 使特殊情况下, 游标刚好在页首尾的也可支持 (不支持范围 sns[1:-1])
+            equal = 'e' if self.cursor_unique_field in (field, f'-{field}') else ''
+            # equal, 查询集包含游标数据本身, 使特殊情况下, 游标刚好在页首尾的也可支持 (而范围sns[1:-1]内将后翻一页)
 
             kwargs = {f'{field}__{lookup}{equal}': val}
             qs_Q_args.append(Q(**fields, **kwargs))

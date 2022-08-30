@@ -56,7 +56,7 @@ class ForeignKey(_dj.ForeignKey):
 
             descriptor = getattr(related_descriptors, self.forward_related_accessor_class.__name__)(self)
             setattr(vr, name, descriptor)
-            setattr(vr, self.attname, related_descriptors.AttNameField(self.column_field.attname))
+            setattr(vr, self.attname, related_descriptors.AttNameField(self.column_field))
 
     # def do_related_class(self, other, cls):
     #     self.set_attributes_from_rel()

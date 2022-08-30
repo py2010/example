@@ -19,6 +19,7 @@ class UserList(views.MyListView):
     # cursor_offset_max = 1000  # 数据超过多少条, 自动切换成游标分页 (游标分页最大偏移量)
     paginator_class = views.pagination.NullFieldCursorPaginator  # 游标分页排序字段支持Null数据
     cursor_order_fields = '__all__'  # 允许前端控制排序的字段，列表或'__all__'.
+    filter_fields = ['name', ]  # 搜索过滤
 
 
 class HostList(views.MyListView):
@@ -37,6 +38,8 @@ class HostList(views.MyListView):
     cursor_offset_max = 600  # 游标分页最大偏移量, 这里为试验效果而设小值
     cursor_unique_field = '-pk'  # 主键或unique=True的字段, 用于生成唯一序列
     cursor_order_fields = '__all__'  # 允许前端控制排序的字段，列表或'__all__'.
+    filter_orm_fields = ['name__icontains', 'user__name__icontains', ]  # orm过滤字段, 列表或'__all__'.
+    filter_fields = ['name', ('user__name', '用户名称'), ]  # 搜索过滤
 
     # def get_context_data(self, *args, **kwargs):
     #     context = super().get_context_data(*args, **kwargs)
