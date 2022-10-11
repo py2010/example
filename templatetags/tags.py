@@ -96,3 +96,82 @@ def show_menu_url(context, name, viewname, *perms):
             pass
     return ''
 
+
+@register.tag('ifmenu')
+def do_ifmenu(parser, token):
+    '''
+    使用分布式菜单 app/templates/app/_menu.html 时，
+    用于控制是否显示母菜单，但又无需设置布尔表达式，以简化配置。
+    通常情况下，当有某个子菜单权限时，则上级母菜单应当也有权限，
+    因此根据子菜单 show_menu_url 权限，自动按需显示/隐藏母菜单。
+    使用示例：
+    {% ifmenu %}
+        <li>
+            <a><i class="fa fa-book"></i> <span class="nav-label">母菜单</span>
+                <span  class="fa arrow"> </span></a>
+            <ul class="nav nav-second-level">
+                <li>{% show_menu_url '子菜单1' 视图url1 权限1 and 权限2 %}</li>
+                <li>{% show_menu_url '子菜单2' 视图url2 权限3 or  权限4 %}</li>
+            </ul>
+        </li>
+    {% else %}
+        <!-- 没有<子菜单1><子菜单2>..权限时显示... -->
+    {% endifmenu %}
+
+    用于取代if类似功能：{% if (权限1 and 权限2) or (权限3 or 权限4) %} ...
+    尤其子菜单多时，分布式菜单中使用if会产生大量冗余重复配置，后续增减子项维护麻烦，
+    而改用集中式菜单，过于抽象使用起来不直观，且代码通用性差，在大系统中还会增加协调成本。
+    '''
+    bits = token.split_contents()[1:]
+    if_nodelist = parser.parse(('else', 'endifmenu'))
+    token = parser.next_token()
+
+    # {% else %} (optional)
+    if token.contents == 'else':
+        else_nodelist = parser.parse(('endifmenu',))
+        token = parser.next_token()
+    else:
+        else_nodelist = None
+
+    # {% endifmenu %}
+    if token.contents != 'endifmenu':
+        raise template.base.TemplateSyntaxError(
+            'Malformed template tag at line {0}: "{1}"'.format(token.lineno, token.contents))
+
+    return IfMenuNode(if_nodelist, else_nodelist)
+
+
+class IfMenuNode(template.base.Node):
+
+    def __init__(self, if_nodelist, else_nodelist):
+        self.if_nodelist, self.else_nodelist = if_nodelist, else_nodelist
+
+    def __repr__(self):
+        return '<%s>' % self.__class__.__name__
+
+    def render(self, context):
+        # 有任何子菜单权限 (show_menu_url非空)，将显示上级母菜单。
+        match = False
+        # self.if_nodelist.render(context)
+        bits = []
+        for node in self.if_nodelist:
+            if isinstance(node, template.base.Node):
+                bit = node.render_annotated(context)
+                if not match and getattr(node, 'func', None) is show_menu_url:
+                    if bit:
+                        # show_menu_url 子菜单有生成链接，表示有子菜单权限
+                        match = True
+            else:
+                bit = node
+            bits.append(str(bit))
+        resp = template.base.mark_safe(''.join(bits))
+
+        if match:
+            return resp
+
+        elif self.else_nodelist:
+            # {% else %} ..... {% endifmenu %}
+            return self.else_nodelist.render(context)
+
+        return ''
+
