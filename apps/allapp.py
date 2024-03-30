@@ -25,6 +25,8 @@ for app in settings.INSTALLED_APPS:
             app_urls = import_module(f'{app_name}.urls')
         except Exception as e:
             if getattr(e, 'name', None) != f'{app}.urls':
+                if getattr(settings, 'RUNTIME_RAISE_APP_ERROR', True):
+                    raise
                 logger.error(e, exc_info=True)
             continue
         URLS_APPS[app_name] = app_urls

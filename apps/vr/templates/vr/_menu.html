@@ -1,0 +1,14 @@
+
+
+            {% ifmenu %}
+            <li>
+                <a><i class="fa fa-book"></i> <span class="nav-label">跨库关联</span>
+                    <span  class="fa arrow"> </span></a>
+                <ul class="nav nav-second-level">
+                    <li>{% show_menu_url 'demo' 'vr:demo_list' 'vr.view_demo' %}</li>
+                    <li>{% show_menu_url '中间表' 'vr:middle_list' 'vr.view_middle' %}</li>
+
+                </ul>
+            </li>
+            {% endifmenu %}
+

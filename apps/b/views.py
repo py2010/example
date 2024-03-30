@@ -5,7 +5,7 @@ from . import models
 # Create your views here.
 
 
-class UserList(views.MyListView):
+class UserListView(views.MyListView):
     model = models.User
     list_fields = [
         'id',
@@ -22,7 +22,7 @@ class UserList(views.MyListView):
     filter_fields = ['name', ]  # 搜索过滤
 
 
-class HostList(views.MyListView):
+class HostListView(views.MyListView):
     model = models.Host
     list_fields = [
         'id',

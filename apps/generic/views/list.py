@@ -231,7 +231,7 @@ class PageListView(QueryListView):
 
         pagesize = self.request.GET.get(self.page_size_kwarg)  # 每页显示条数
         try:
-            self.paginate_by = min(100, int(pagesize))  # 限制最大100条
+            self.paginate_by = min(1000, int(pagesize))  # 限制最大条数1000
         except Exception:
             pass
 

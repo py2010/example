@@ -8,7 +8,7 @@ class UserMixin:
     model = models.User
 
 
-class UserList(UserMixin, views.MyListView):
+class UserListView(UserMixin, views.MyListView):
     list_fields = [
         # 'id',
         'username',
@@ -28,7 +28,7 @@ class OneMixin:
     model = models.One
 
 
-class OneList(OneMixin, views.MyListView):
+class OneListView(OneMixin, views.MyListView):
     paginate_by = 2  # 每页条数
     list_fields = [
         'name',
@@ -45,7 +45,7 @@ class PMixin:
     model = models.P
 
 
-class PList(PMixin, views.MyListView):
+class PListView(PMixin, views.MyListView):
     list_fields = [
         'name',
         # # 'desc',
@@ -61,7 +61,7 @@ class PList(PMixin, views.MyListView):
         return qs
 
 
-class P2List(views.MyListView):
+class P2ListView(views.MyListView):
     model = models.P2
     list_fields = [
         'name2',
@@ -70,7 +70,7 @@ class P2List(views.MyListView):
     ]
 
 
-class P3List(views.MyListView):
+class P3ListView(views.MyListView):
     model = models.P3
     list_fields = [
         'name3',
@@ -79,7 +79,7 @@ class P3List(views.MyListView):
     ]
 
 
-class TList(views.MyListView):
+class TListView(views.MyListView):
     model = models.T
     paginate_by = 5  # 每页条数
     list_fields = [
@@ -98,7 +98,7 @@ class MMixin:
     model = models.M
 
 
-class MList(MMixin, views.MyListView):
+class MListView(MMixin, views.MyListView):
     # paginate_by = None  # 不分页
     filter_fields = [('name', 'M名称'), ('t__name', 'T名称'), ]  # 搜索过滤
     filter_orm_fields = ['t__name__icontains', 't__p__name__icontains', ]  # orm过滤字段, 为安全必须配置字段
@@ -130,7 +130,7 @@ class M2TMixin:
     model = models.M2T
 
 
-class M2TList(M2TMixin, views.MyListView):
+class M2TListView(M2TMixin, views.MyListView):
     list_fields = [
         'id',
         # 'm',

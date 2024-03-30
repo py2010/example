@@ -52,18 +52,40 @@ class MyRouter:
         '''
         self.model = model
         self.args = args
-        self.kwargs = kwargs
-        self.set_actions()  # 合并args配置
+        self.set_actions(kwargs)  # 合并args配置
 
         self.urls = []
-        self.set_urls()
+        self.app_views = None
+        self.done = False
 
     def __getitem__(self, i):
+        if not self.done:
+            self.done = True
+            self.set_app_views()
+            self.set_urls()
         return self.urls[i]
 
-    def set_actions(self):
+    def set_app_views(self, app_views=None):
+        # 绑定 app.views 模块，以备后用。
+        # 自动路由时，优先利用视图模块中人工开发的同名视图，
+        # 当同名视图不存在时才会自动生成 ModelActionView
+        if not self.app_views:
+            if app_views:
+                self.app_views = app_views
+            else:
+                try:
+                    urls_locals = sys._getframe().f_back.f_back.f_locals
+                    self.app_views = get_module(urls_locals, 'views')
+                except Exception:
+                    logger.info(
+                        f"""无法获取视图模块({self.model._meta.app_label}.views)，
+                        当前模型({self.model.__module__}.{self.model.__name__})将无法利用人工编写的ModelView(若有)
+                        来自动生成路由，所需视图将和路由一样都将自动生成"""
+                    )
+
+    def set_actions(self, kwargs):
         self.actions = conf.ROUTER_ACTIONS.copy()  # 默认actions配置
-        self.actions.update(self.kwargs)  # 加载urls.py提供的actions
+        self.actions.update(kwargs)  # 加载urls.py提供的actions
         for index in range(1, 6):
             self.set_action(index)
         logger.debug(f'{self.actions} - ({self.model._meta.app_label}.{self.model.__name__})')
@@ -96,48 +118,59 @@ class MyRouter:
         return conf.ROUTER_URL_RULES.get(action, f'{action}/')
 
     def get_view(self, action):
-        # 自动创建MyModelView视图, 用于urls.py调用
-        kwargs = {
-            '__module__': f'{__name__}.{self.model._meta.app_label}',
-            'model': self.model,
-        }
-        if action in ['create', 'update']:
-            kwargs['fields'] = '__all__'
+        view_name = f'{self.model.__name__}{action.capitalize()}View'
+        view = getattr(self.app_views, view_name, None)
 
-        view_name = f'{action.capitalize()}View'
-        view = type(
-            f'{self.model.__name__}{view_name}',
-            (getattr(views, f'My{view_name}'), ),
-            kwargs
-        )
+        if not view:
+            kwargs = {
+                '__module__': f'{__name__}.{self.model._meta.app_label}',
+                'model': self.model,
+            }
+            if action in ['create', 'update']:
+                kwargs['fields'] = '__all__'
+
+            view =  type(
+                # 自动创建MyModelView视图, 用于urls.py调用
+                view_name,
+                (getattr(views, f'My{action.capitalize()}View'), ),
+                kwargs
+            )
+            logger.info(f"使用模型 {self.model.__module__}.{self.model.__name__} 创建视图: {view_name}")
+            if self.app_views:
+                setattr(self.app_views, view_name, view)
+                logger.debug(f"在 {self.app_views.__name__} 中加入新视图: {view_name}")
+
         return view
 
 
-def add_router_for_all_models(models=None, urlpatterns=None, args=0b11111, **kwargs):
-    # 自动为models模块中所有的模型创建urls/views.
-    f_locals = sys._getframe().f_back.f_locals
-    if hasattr(models, '_meta'):
-        models = [models]
-    else:
-        models = models or f_locals.get('models') or get_models(f_locals)
-    urlpatterns = urlpatterns or f_locals['urlpatterns']  # 未提供则自动从urls.loacls()中取
+    @classmethod
+    def add_router_for_all_models(cls, urlpatterns=None, models=None, views=None, args=0b11111, **kwargs):
+        # 自动为models模块中所有的模型创建urls/views.
+        urls_locals = sys._getframe().f_back.f_locals
+        urlpatterns = urlpatterns or urls_locals['urlpatterns']  # 未提供则自动从urls.loacls()中取
+        models = models or get_module(urls_locals, 'models')
+        app_views = views or get_module(urls_locals, 'views')
 
-    logger.debug(f"{f_locals.get('__name__')} 自动路由...")
-    for attr in dir(models):
-        if attr.startswith('_'):
-            continue
-        model = getattr(models, attr)
-        if hasattr(model, '_meta') and not model._meta.abstract:
-            # 自动生成model的url和视图
-            urlpatterns.extend(MyRouter(model, args, **kwargs))
+        logger.debug(f"{urls_locals.get('__name__')} 自动路由...")
+        for attr in dir(models):
+            if attr.startswith('_'):
+                continue
+            model = getattr(models, attr)
+            if hasattr(model, '_meta') and not model._meta.abstract:
+                # 根据模型自动生成url路由
+                router = MyRouter(model, args, **kwargs)
+                router.set_app_views(app_views)  # f_back数一致，需在此触发set_app_views(None)
+                urlpatterns.extend(router)
 
 
-def get_models(f_locals):
-    # 未提供models时, 自动从urls模块所在基目录加载
-    module = f_locals['__name__'].split('.')[:-1]
-    module.append('models')
-    models = import_module('.'.join(module))
-    return models
+def get_module(urls_locals, module_name):
+    # 未提供models/views时, 自动从urls模块所在基目录加载
+    module = urls_locals.get('module_name')
+    if module:
+        return module
+    module_path = urls_locals['__name__'].split('.')[:-1]
+    module_path.append(module_name)
+    return import_module('.'.join(module_path))
 
 
 '''
@@ -148,7 +181,7 @@ def get_models(f_locals):
 
 from generic.routers import MyRouter
 from . import models  # 用于自动views
-from . import views  # 用于人工views
+from . import views  # 用于人工views，或自动路由使用已有的 ModelActionView
 
 urlpatterns = [
 
@@ -158,19 +191,19 @@ urlpatterns = [
 
     # 如果需使用自定义配置的人工ListView, 除此之外其它自动生成, 则:
     *MyRouter(models.Xxx, list=False),
-    re_path(r'^xxx/$', views.XxxList.as_view(), name='xxx_list'),
+    re_path(r'^xxx/$', views.XxxListView.as_view(), name='xxx_list'),
 
 
-    # 如果 增删改 人工生成, 其它自动生成, 则:
-    re_path(r'^xxx/create/$', views.XxxAdd.as_view(), name='xxx_create'),
-    re_path(r'^xxx/delete/$', views.XxxDelete.as_view(), name='xxx_delete'),
+    # 如果 增删改 人工配置, 其它自动生成, 则:
+    re_path(r'^xxx/create/$', views.XxxCreateView.as_view(), name='xxx_create'),
+    re_path(r'^xxx/delete/$', views.XxxDeleteView.as_view(), name='xxx_delete'),
 
-    re_path(r'^xxx/(?P<pk>\d+)/update/$', views.XxxUpdate.as_view(), name='xxx_update'),
+    re_path(r'^xxx/(?P<pk>\d+)/update/$', views.XxxUpdateView.as_view(), name='xxx_update'),
 
     *MyRouter(models.Xxx, 0b11),
 
 
-    # 自动生成Detail, 其它人工
+    # 自动生成DetailView, 其它人工配置
     *MyRouter(models.Xxx, 0, detail=True),
     ...  # 其它人工处理
 
@@ -190,6 +223,6 @@ model各页面的人工URL路径规则, 如果和当前通用视图模板URL路�
 urlpatterns = [
     ...
 ]
-add_router_for_all_models()
+MyRouter.add_router_for_all_models()
 
 '''

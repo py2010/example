@@ -1,0 +1,20 @@
+
+
+            {% ifmenu %}
+            <li>
+                <a><i class="fa fa-book"></i> <span class="nav-label">演示</span>
+                    <span  class="fa arrow"> </span></a>
+                <ul class="nav nav-second-level">
+                    <li>{% show_menu_url '网站用户' 'a:user_list' 'auth.view_user' %}</li>
+                    <li>{% show_menu_url 'b' 'a:b_list' 'a.view_b' %}</li>
+                    <li>{% show_menu_url 'o2o' 'a:one_list' 'a.view_one' %}</li>
+                    <li>{% show_menu_url 'p1' 'a:p_list' 'a.view_p' %}</li>
+                    <li>{% show_menu_url 'p扩展2' 'a:p2_list' 'a.view_p2' %}</li>
+                    <li>{% show_menu_url 'p扩展3' 'a:p3_list' 'a.view_p3' %}</li>
+                    <li>{% show_menu_url 't' 'a:t_list' 'a.view_t' %}</li>
+                    <li>{% show_menu_url 'm' 'a:m_list' 'a.view_m' %}</li>
+                    <li>{% show_menu_url 'm2t' 'a:m2t_list' 'a.view_m2t' %}</li>
+
+                </ul>
+            </li>
+            {% endifmenu %}

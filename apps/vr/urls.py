@@ -5,20 +5,19 @@ try:
 except Exception:
     from django.conf.urls import url as re_path  # django 1.*
 
-from generic.routers import add_router_for_all_models
-# from generic.routers import MyRouter
+from generic.routers import MyRouter
 
 from . import views
 
 urlpatterns = [
 
     # Demo
-    re_path(r'^demo/$', views.DemoList.as_view(), name="demo_list"),
+    re_path(r'^demo/$', views.DemoListView.as_view(), name="demo_list"),
 
 
 ]
 
 
-add_router_for_all_models()
+MyRouter.add_router_for_all_models()
 
 # print(urlpatterns)

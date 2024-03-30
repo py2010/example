@@ -19,6 +19,13 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(BASE_DIR, 'apps'))
 
 '''
+django启动时，当某个APP加载运行出错，是否raise整个django, 
+False 则出错APP自动下线，不影响整个django项目及正常APP启动，
+True  默认，APP加载出错则中断整个进程执行，同django默认规则。
+'''
+# RUNTIME_RAISE_APP_ERROR = False
+
+'''
 django 项目配置
 配置优先级: 环境变量 > pro.setting / YML > app.conf
 环境变量优先级仅支持值类型(str, int, float, bool), 自动转换还原

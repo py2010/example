@@ -5,7 +5,7 @@ from . import models
 # Create your views here.
 
 
-class DemoList(views.MyListView):
+class DemoListView(views.MyListView):
     model = models.Demo
     list_fields = [
         'name',
